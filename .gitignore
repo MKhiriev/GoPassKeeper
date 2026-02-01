@@ -28,7 +28,7 @@ go.work.sum
 .env
 
 # docs and other files
-Technical Specification.md
+SPECIFICATION.md
 
 # Editor/IDE
 # .idea/
