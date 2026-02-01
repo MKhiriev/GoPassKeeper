@@ -4,12 +4,21 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	myGRPC "github.com/MKhiriev/go-pass-keeper/internal/handler/grpc"
+
 	"google.golang.org/grpc"
 )
 
 type grpcServer struct {
+	handler *myGRPC.Handler
+
 	server          *grpc.Server
 	gRPCNetListener net.Listener
+}
+
+func newGRPCServer(handler *myGRPC.Handler, cfg *config.Server) *grpcServer {
+	return &grpcServer{}
 }
 
 func (g *grpcServer) RunServer() {

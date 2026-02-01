@@ -4,10 +4,23 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
 )
 
 type httpServer struct {
 	server *http.Server
+}
+
+func newHTTPServer(handler http.Handler, cfg *config.Server) *httpServer {
+	return &httpServer{
+		server: &http.Server{
+			Addr:         cfg.HTTPAddress,
+			Handler:      handler,
+			ReadTimeout:  cfg.RequestTimeout,
+			WriteTimeout: cfg.RequestTimeout,
+		},
+	}
 }
 
 func (h *httpServer) RunServer() {

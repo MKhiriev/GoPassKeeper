@@ -3,6 +3,7 @@ module github.com/MKhiriev/go-pass-keeper
 go 1.25.5
 
 require (
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/rs/zerolog v1.34.0
 	google.golang.org/grpc v1.78.0
 )

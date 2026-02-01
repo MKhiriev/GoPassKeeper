@@ -14,9 +14,9 @@ type Auth struct {
 }
 
 type Server struct {
-	ServerAddress     string
-	GrpcServerAddress string
-	RequestTimeout    time.Duration
+	HTTPAddress    string
+	GRPCAddress    string
+	RequestTimeout time.Duration
 }
 
 type Adapter struct {
