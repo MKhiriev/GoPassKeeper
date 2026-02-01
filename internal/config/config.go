@@ -1,6 +1,20 @@
 package config
 
-import "time"
+import (
+	"time"
+)
+
+// TODO find the required configs
+// TODO add env and json tags
+
+type StructuredConfig struct {
+	Auth         Auth
+	DB           DBConfig
+	Server       Server
+	Adapter      Adapter
+	Workers      Workers
+	jsonFilePath string
+}
 
 type DBConfig struct {
 	DSN string
@@ -25,20 +39,10 @@ type Adapter struct {
 type Workers struct {
 }
 
-type StructuredConfig struct {
-	Auth    Auth
-	DB      DBConfig
-	Server  Server
-	Adapter Adapter
-	Workers Workers
-}
-
 func GetStructuredConfig() (*StructuredConfig, error) {
-	return &StructuredConfig{
-		Auth:    Auth{},
-		Server:  Server{},
-		DB:      DBConfig{},
-		Adapter: Adapter{},
-		Workers: Workers{},
-	}, nil
+	return newConfigBuilder().
+		withEnv().
+		withFlags().
+		withJSON().
+		build()
 }
