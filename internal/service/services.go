@@ -1,7 +1,7 @@
 package service
 
 type Services struct {
-	// all services are stored here
+	AuthService AuthService
 }
 
 func NewServices() *Services {
