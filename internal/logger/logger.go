@@ -8,7 +8,7 @@ import (
 )
 
 type Logger struct {
-	*zerolog.Logger
+	zerolog.Logger
 }
 
 func NewLogger(role string) *Logger {
@@ -24,5 +24,5 @@ func NewLogger(role string) *Logger {
 		Caller().
 		Logger()
 
-	return &Logger{&logger}
+	return &Logger{logger}
 }
