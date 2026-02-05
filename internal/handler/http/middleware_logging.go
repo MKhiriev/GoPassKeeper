@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (h *Handler) WithHashing(next http.Handler) http.Handler {
+func (h *Handler) WithLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
