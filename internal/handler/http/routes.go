@@ -7,7 +7,7 @@ import (
 
 func (h *Handler) Init() *chi.Mux {
 	router := chi.NewRouter()
-	router.Use(middleware.Recoverer, h.WithLogging, GZip)
+	router.Use(middleware.Recoverer, h.withLogging, withGZip)
 
 	router.Route("/api", func(api chi.Router) {
 

@@ -21,7 +21,7 @@ var gzipReaderPool = sync.Pool{
 	},
 }
 
-func GZip(next http.Handler) http.Handler {
+func withGZip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		acceptEncoding := req.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
