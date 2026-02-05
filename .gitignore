@@ -29,6 +29,7 @@ go.work.sum
 
 # docs and other files
 SPECIFICATION.md
+TODO.md
 
 # Editor/IDE
 # .idea/
