@@ -72,3 +72,9 @@ type CustomField struct {
 	// Data contains the encrypted value of the custom field.
 	Data CipheredData `json:"data"`
 }
+
+// TableName returns the name of the database table
+// associated with the PrivateData model.
+func (u PrivateData) TableName() string {
+	return "ciphers"
+}

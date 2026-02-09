@@ -24,7 +24,7 @@ func NewUserRepository(db *sql.DB, logger *logger.Logger) UserRepository {
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
-	row := r.db.QueryRowContext(ctx, createUser, user.Login, user.Password)
+	row := r.db.QueryRowContext(ctx, createUser, user.Login, user.MasterPassword)
 
 	// create user in db
 	if err := row.Err(); err != nil {
@@ -39,7 +39,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user models.User) (mode
 	}
 
 	// scan saved user from db
-	if err := row.Scan(&user.UserID, &user.Login, &user.Password); err != nil {
+	if err := row.Scan(&user.UserID, &user.Login, &user.MasterPassword); err != nil {
 		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
 		return models.User{}, err
 	}
@@ -63,7 +63,7 @@ func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) 
 	}
 
 	// scan found user from db
-	if err := row.Scan(&foundUser.UserID, &foundUser.Login, &foundUser.Password); err != nil {
+	if err := row.Scan(&foundUser.UserID, &foundUser.Login, &foundUser.MasterPassword); err != nil {
 		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
 		return models.User{}, err
 	}

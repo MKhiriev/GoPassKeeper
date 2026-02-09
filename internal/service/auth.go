@@ -34,7 +34,7 @@ func NewAuthService(userRepository store.UserRepository, cfg config.Auth, logger
 }
 
 func (a *authService) RegisterUser(ctx context.Context, user models.User) (models.User, error) {
-	if user.Login == "" || user.Password == "" {
+	if user.Login == "" || user.MasterPassword == "" {
 		a.logger.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
@@ -51,7 +51,7 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 }
 
 func (a *authService) Login(ctx context.Context, user models.User) (models.User, error) {
-	if user.Login == "" || user.Password == "" {
+	if user.Login == "" || user.MasterPassword == "" {
 		a.logger.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
@@ -63,12 +63,12 @@ func (a *authService) Login(ctx context.Context, user models.User) (models.User,
 		return models.User{}, fmt.Errorf("user search by login failed: %w", err)
 	}
 
-	if foundUser.Password != user.Password {
+	if foundUser.MasterPassword != user.MasterPassword {
 		a.logger.Err(err).
 			Int64("id", foundUser.UserID).
 			Str("login", foundUser.Login).
-			Str("typed password", user.Password).
-			Str("actual password", foundUser.Password).
+			Str("typed password", user.MasterPassword).
+			Str("actual password", foundUser.MasterPassword).
 			Msg("wrong password")
 		return models.User{}, ErrWrongPassword
 	}
@@ -95,5 +95,5 @@ func (a *authService) ParseToken(ctx context.Context, tokenString string) (model
 }
 
 func (a *authService) hashPassword(user *models.User) {
-	user.Password = utils.HashString(user.Password, a.hashKey)
+	user.MasterPassword = utils.HashString(user.MasterPassword, a.hashKey)
 }
