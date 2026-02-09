@@ -2,7 +2,7 @@ package http
 
 import "net/http"
 
-func (h *Handler) syncAllUserData(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getClientServerDiff(w http.ResponseWriter, r *http.Request) {
 	// TODO implement me!
 	panic("implement me")
 }
