@@ -35,7 +35,7 @@ func (h *Handler) Init() *chi.Mux {
 			data.Get("/{type}/{id}", h.download)
 			data.Post("/value", h.downloadMultiple)
 
-			data.Put("/{type}/{id}", h.update)
+			data.Put("/update", h.update)
 			data.Delete("/{type}/{id}", h.delete)
 		})
 
