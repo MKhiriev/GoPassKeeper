@@ -8,18 +8,18 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
-type PrivateDataValidationService struct {
+type privateDataValidationService struct {
 	inner     PrivateDataService
 	validator validators.Validator
 }
 
 func NewPrivateDataValidationService() PrivateDataServiceWrapper {
-	return &PrivateDataValidationService{
+	return &privateDataValidationService{
 		validator: validators.NewPrivateDataValidator(),
 	}
 }
 
-func (v *PrivateDataValidationService) UploadPrivateData(ctx context.Context, privateData models.PrivateData) error {
+func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, privateData models.PrivateData) error {
 	// data in json should consist of:
 	//  - Metadata
 	//  - Type
@@ -35,32 +35,32 @@ func (v *PrivateDataValidationService) UploadPrivateData(ctx context.Context, pr
 	return v.inner.UploadPrivateData(ctx, privateData)
 }
 
-func (v *PrivateDataValidationService) DownloadPrivateData(ctx context.Context, data models.PrivateData) (models.PrivateData, error) {
+func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, data models.PrivateData) (models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *PrivateDataValidationService) DownloadMultiplePrivateData(ctx context.Context, data []models.PrivateData) ([]models.PrivateData, error) {
+func (v *privateDataValidationService) DownloadMultiplePrivateData(ctx context.Context, data []models.PrivateData) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *PrivateDataValidationService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
+func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *PrivateDataValidationService) UpdatePrivateData(ctx context.Context, data models.PrivateData) error {
+func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *PrivateDataValidationService) DeletePrivateData(ctx context.Context, data models.PrivateData) error {
+func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *PrivateDataValidationService) Wrap(wrapper PrivateDataService) PrivateDataService {
+func (v *privateDataValidationService) Wrap(wrapper PrivateDataService) PrivateDataService {
 	v.inner = wrapper
 	return v
 }
