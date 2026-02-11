@@ -10,7 +10,7 @@ func (c contextKey) String() string {
 	return string(c)
 }
 
-var UserIDCtxKey = contextKey("userId")
+var UserIDCtxKey = contextKey("userID")
 
 func GetUserIDFromContext(ctx context.Context) (int64, bool) {
 	userID, ok := ctx.Value(UserIDCtxKey).(int64)
