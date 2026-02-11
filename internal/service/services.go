@@ -7,11 +7,13 @@ import (
 )
 
 type Services struct {
-	AuthService AuthService
+	AuthService        AuthService
+	PrivateDataService PrivateDataService
 }
 
 func NewServices(repositories store.Repositories, cfg config.StructuredConfig, logger *logger.Logger) *Services {
 	return &Services{
-		NewAuthService(repositories.UserRepository, cfg.Auth, logger),
+		AuthService:        NewAuthService(repositories.UserRepository, cfg.Auth, logger),
+		PrivateDataService: NewPrivateDataService(repositories.PrivateDataStorage, cfg.DB, logger),
 	}
 }

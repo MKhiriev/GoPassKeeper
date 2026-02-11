@@ -1,7 +1,8 @@
 package store
 
 type Repositories struct {
-	UserRepository UserRepository
+	UserRepository     UserRepository
+	PrivateDataStorage PrivateDataStorage
 }
 
 func NewServices() *Repositories {
