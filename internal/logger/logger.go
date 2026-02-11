@@ -26,3 +26,7 @@ func NewLogger(role string) *Logger {
 
 	return &Logger{logger}
 }
+
+func (l *Logger) GetChildLogger() *Logger {
+	return &Logger{l.With().Logger()}
+}
