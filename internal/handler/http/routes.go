@@ -12,11 +12,11 @@ func (h *Handler) Init() *chi.Mux {
 	router.Route("/api", func(api chi.Router) {
 
 		// auth service routes
-		api.Route("/auth", func(user chi.Router) {
-			user.Post("/register", h.register)
-			user.Post("/login", h.login)
+		api.Route("/auth", func(auth chi.Router) {
+			auth.Post("/register", h.register)
+			auth.Post("/login", h.login)
 
-			user.Route("/settings", func(settings chi.Router) {
+			auth.Route("/settings", func(settings chi.Router) {
 				settings.Use(h.auth)
 
 				settings.Post("/password/change", h.changeUserPassword)
