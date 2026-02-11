@@ -1,10 +1,13 @@
 package logger
 
 import (
+	"context"
+	"net/http"
 	"os"
 	"runtime"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type Logger struct {
@@ -29,4 +32,12 @@ func NewLogger(role string) *Logger {
 
 func (l *Logger) GetChildLogger() *Logger {
 	return &Logger{l.With().Logger()}
+}
+
+func FromRequest(r *http.Request) *Logger {
+	return &Logger{*log.Ctx(r.Context())}
+}
+
+func FromContext(ctx context.Context) *Logger {
+	return &Logger{*log.Ctx(ctx)}
 }
