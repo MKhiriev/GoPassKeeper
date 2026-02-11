@@ -7,7 +7,7 @@ import (
 
 func (h *Handler) Init() *chi.Mux {
 	router := chi.NewRouter()
-	router.Use(middleware.Recoverer, h.withLogging, withGZip)
+	router.Use(middleware.Recoverer, h.withTraceID, h.withLogging, withGZip)
 
 	router.Route("/api", func(api chi.Router) {
 
@@ -33,7 +33,7 @@ func (h *Handler) Init() *chi.Mux {
 
 			data.Get("/all", h.downloadAllUserData)
 			data.Get("/{type}/{id}", h.download)
-			data.Post("/value", h.download)
+			data.Post("/value", h.downloadMultiple)
 
 			data.Put("/{type}/{id}", h.update)
 			data.Delete("/{type}/{id}", h.delete)

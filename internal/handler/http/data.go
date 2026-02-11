@@ -12,6 +12,11 @@ func (h *Handler) download(w http.ResponseWriter, r *http.Request) {
 	panic("implement me")
 }
 
+func (h *Handler) downloadMultiple(w http.ResponseWriter, r *http.Request) {
+	// TODO implement me!
+	panic("implement me")
+}
+
 func (h *Handler) downloadAllUserData(w http.ResponseWriter, r *http.Request) {
 	// TODO implement me!
 	panic("implement me")
