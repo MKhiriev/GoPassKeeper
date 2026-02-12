@@ -23,26 +23,21 @@ func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg c
 }
 
 func (p *privateDataService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
-	//TODO implement me
-	panic("implement me")
+	return p.privateDataRepository.Save(ctx, privateData...)
 }
 
-func (p *privateDataService) DownloadPrivateData(ctx context.Context, data ...models.DownloadRequest) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
+	return p.privateDataRepository.Get(ctx, downloadRequests...)
 }
 
 func (p *privateDataService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+	return p.privateDataRepository.GetAll(ctx)
 }
 
-func (p *privateDataService) UpdatePrivateData(ctx context.Context, data ...models.UpdateRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {
+	return p.privateDataRepository.Update(ctx, updateRequests...)
 }
 
-func (p *privateDataService) DeletePrivateData(ctx context.Context, data ...models.DeleteRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataService) DeletePrivateData(ctx context.Context, deleteRequests ...models.DeleteRequest) error {
+	return p.privateDataRepository.Delete(ctx, deleteRequests...)
 }
