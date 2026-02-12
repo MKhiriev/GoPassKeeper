@@ -32,11 +32,10 @@ func (h *Handler) Init() *chi.Mux {
 			data.Post("/", h.upload)
 
 			data.Get("/all", h.downloadAllUserData)
-			data.Get("/{type}/{id}", h.download)
-			data.Post("/value", h.downloadMultiple)
+			data.Post("/download", h.downloadMultiple)
 
 			data.Put("/update", h.update)
-			data.Delete("/{type}/{id}", h.delete)
+			data.Delete("/delete", h.delete)
 		})
 
 		// client-server sync data routes
