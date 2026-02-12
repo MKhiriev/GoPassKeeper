@@ -1,10 +1,10 @@
 package store
 
-type Repositories struct {
+type Storages struct {
 	UserRepository     UserRepository
 	PrivateDataStorage PrivateDataStorage
 }
 
-func NewServices() *Repositories {
-	return &Repositories{}
+func NewServices() *Storages {
+	return &Storages{}
 }
