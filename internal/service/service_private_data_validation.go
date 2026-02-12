@@ -50,12 +50,12 @@ func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Contex
 	panic("implement me")
 }
 
-func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data models.PrivateData) error {
+func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data models.PrivateData) error {
+func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }

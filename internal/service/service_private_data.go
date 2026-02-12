@@ -41,12 +41,12 @@ func (p *privateDataService) DownloadAllPrivateData(ctx context.Context) ([]mode
 	panic("implement me")
 }
 
-func (p *privateDataService) UpdatePrivateData(ctx context.Context, data models.PrivateData) error {
+func (p *privateDataService) UpdatePrivateData(ctx context.Context, data ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *privateDataService) DeletePrivateData(ctx context.Context, data models.PrivateData) error {
+func (p *privateDataService) DeletePrivateData(ctx context.Context, data ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
