@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/internal/validators"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
@@ -20,39 +21,91 @@ func NewPrivateDataValidationService() PrivateDataServiceWrapper {
 }
 
 func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
-	// data in json should consist of:
-	//  - Metadata
-	//  - Type
-	//  - Data
-	//  - (not always) Notes
-	//  - (not always) Additional Fields
-	if err := v.validator.Validate(ctx, privateData); err != nil {
-		return fmt.Errorf("error during private data validation before saving: %w", err)
+	if len(privateData) == 0 {
+		return ErrValidationNoPrivateDataProvided
 	}
 
-	// todo get user id from context and add to private data user id
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return ErrValidationNoUserID
+	}
+
+	for _, data := range privateData {
+		if err := v.validator.Validate(ctx, data); err != nil {
+			return fmt.Errorf("error during private data validation before saving: %w", err)
+		}
+
+		data.UserID = userID
+	}
 
 	return v.inner.UploadPrivateData(ctx, privateData...)
 }
 
-func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, data ...models.DownloadRequest) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
+	if len(downloadRequests) == 0 {
+		return nil, ErrValidationNoDownloadRequestsProvided
+	}
+
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return nil, ErrValidationNoUserID
+	}
+
+	for _, request := range downloadRequests {
+		if err := v.validator.Validate(ctx, request); err != nil {
+			return nil, fmt.Errorf("error during download request validation before saving: %w", err)
+		}
+
+		request.UserID = userID
+	}
+
+	return v.inner.DownloadPrivateData(ctx, downloadRequests...)
 }
 
 func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+	return v.inner.DownloadAllPrivateData(ctx)
 }
 
-func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data ...models.UpdateRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {
+	if len(updateRequests) == 0 {
+		return ErrValidationNoUpdateRequestsProvided
+	}
+
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return ErrValidationNoUserID
+	}
+
+	for _, request := range updateRequests {
+		if err := v.validator.Validate(ctx, request); err != nil {
+			return fmt.Errorf("error during download request validation before saving: %w", err)
+		}
+
+		request.UserID = userID
+	}
+
+	return v.inner.UpdatePrivateData(ctx, updateRequests...)
 }
 
-func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data ...models.DeleteRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, deleteRequests ...models.DeleteRequest) error {
+	if len(deleteRequests) == 0 {
+		return ErrValidationNoDeleteRequestsProvided
+	}
+
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return ErrValidationNoUserID
+	}
+
+	for _, request := range deleteRequests {
+		if err := v.validator.Validate(ctx, request); err != nil {
+			return fmt.Errorf("error during download request validation before saving: %w", err)
+		}
+
+		request.UserID = userID
+	}
+
+	return v.inner.DeletePrivateData(ctx, deleteRequests...)
 }
 
 func (v *privateDataValidationService) Wrap(wrapper PrivateDataService) PrivateDataService {
