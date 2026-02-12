@@ -19,7 +19,7 @@ func NewPrivateDataValidationService() PrivateDataServiceWrapper {
 	}
 }
 
-func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, privateData models.PrivateData) error {
+func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
 	// data in json should consist of:
 	//  - Metadata
 	//  - Type
@@ -32,15 +32,10 @@ func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, pr
 
 	// todo get user id from context and add to private data user id
 
-	return v.inner.UploadPrivateData(ctx, privateData)
+	return v.inner.UploadPrivateData(ctx, privateData...)
 }
 
-func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, data models.PrivateData) (models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *privateDataValidationService) DownloadMultiplePrivateData(ctx context.Context, data []models.PrivateData) ([]models.PrivateData, error) {
+func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, data ...models.DownloadRequest) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -50,12 +45,12 @@ func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Contex
 	panic("implement me")
 }
 
-func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, data ...models.UpdateRequest) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, data ...models.DeleteRequest) error {
 	//TODO implement me
 	panic("implement me")
 }

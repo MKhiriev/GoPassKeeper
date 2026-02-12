@@ -7,14 +7,13 @@ import (
 )
 
 type PrivateDataService interface {
-	UploadPrivateData(ctx context.Context, data models.PrivateData) error
+	UploadPrivateData(ctx context.Context, data ...models.PrivateData) error
 
-	DownloadPrivateData(ctx context.Context, data models.PrivateData) (models.PrivateData, error)
-	DownloadMultiplePrivateData(ctx context.Context, data []models.PrivateData) ([]models.PrivateData, error)
+	DownloadPrivateData(ctx context.Context, data ...models.DownloadRequest) ([]models.PrivateData, error)
 	DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error)
 
-	UpdatePrivateData(ctx context.Context, data ...models.PrivateData) error
-	DeletePrivateData(ctx context.Context, data ...models.PrivateData) error
+	UpdatePrivateData(ctx context.Context, data ...models.UpdateRequest) error
+	DeletePrivateData(ctx context.Context, data ...models.DeleteRequest) error
 }
 
 type AuthService interface {

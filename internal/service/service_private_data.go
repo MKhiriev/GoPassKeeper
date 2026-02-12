@@ -22,16 +22,12 @@ func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg c
 	}
 }
 
-func (p *privateDataService) UploadPrivateData(ctx context.Context, privateData models.PrivateData) error {
-	return p.privateDataRepository.Save(ctx, privateData)
-}
-
-func (p *privateDataService) DownloadPrivateData(ctx context.Context, data models.PrivateData) (models.PrivateData, error) {
+func (p *privateDataService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *privateDataService) DownloadMultiplePrivateData(ctx context.Context, data []models.PrivateData) ([]models.PrivateData, error) {
+func (p *privateDataService) DownloadPrivateData(ctx context.Context, data ...models.DownloadRequest) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -41,12 +37,12 @@ func (p *privateDataService) DownloadAllPrivateData(ctx context.Context) ([]mode
 	panic("implement me")
 }
 
-func (p *privateDataService) UpdatePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataService) UpdatePrivateData(ctx context.Context, data ...models.UpdateRequest) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *privateDataService) DeletePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataService) DeletePrivateData(ctx context.Context, data ...models.DeleteRequest) error {
 	//TODO implement me
 	panic("implement me")
 }
