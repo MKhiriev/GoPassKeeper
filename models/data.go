@@ -14,7 +14,8 @@ type PrivateData struct {
 
 	// Metadata contains non-sensitive descriptive information
 	// such as display name and folder placement.
-	Metadata Metadata `json:"metadata"`
+	// Metadata is stored in DB as an encrypted string.
+	Metadata CipheredMetadata `json:"metadata"`
 
 	// Type defines the semantic type of the stored data
 	// (e.g. login, secure note, card, binary reference).
@@ -22,15 +23,18 @@ type PrivateData struct {
 
 	// Data holds the encrypted payload.
 	// The database treats this field as an opaque string.
+	// Data is stored in DB as an encrypted string.
 	Data CipheredData `json:"data"`
 
 	// Notes contains optional user notes.
 	// Notes may be stored encrypted or in plain form depending on configuration.
-	Notes *Notes `json:"notes,omitempty"`
+	// Notes are stored in DB as an encrypted string.
+	Notes *CipheredNotes `json:"notes,omitempty"`
 
 	// AdditionalFields contains optional custom user-defined fields.
 	// Each field is independently typed and encrypted.
-	AdditionalFields *[]CustomField `json:"fields,omitempty"`
+	// AdditionalFields are stored in DB as an encrypted string.
+	AdditionalFields *CipheredCustomFields `json:"fields,omitempty"`
 
 	// CreatedAt is the timestamp when the record was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -48,10 +52,6 @@ type Metadata struct {
 	// Folder is an optional logical container used to group items.
 	Folder *string
 }
-
-// CipheredData is a string alias representing encrypted content.
-// The actual structure and meaning of the data are unknown to the database.
-type CipheredData string
 
 // Notes represents an optional textual annotation attached to PrivateData.
 type Notes struct {
