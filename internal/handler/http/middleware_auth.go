@@ -6,23 +6,26 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 )
 
 func (h *Handler) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.FromRequest(r)
+
 		// token is expired case
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			h.logger.Err(ErrEmptyAuthorizationHeader).Send()
+			log.Err(ErrEmptyAuthorizationHeader).Send()
 			http.Error(w, ErrEmptyAuthorizationHeader.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		tokenString, err := getTokenFromAuthHeader(authHeader)
 		if err != nil {
-			h.logger.Err(err).Send()
+			log.Err(err).Send()
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
@@ -33,11 +36,11 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 		if err != nil {
 			switch {
 			case errors.Is(err, service.ErrTokenIsExpired):
-				h.logger.Err(err).Msg("token expired")
+				log.Err(err).Msg("token expired")
 				http.Error(w, service.ErrTokenIsExpired.Error(), http.StatusUnauthorized)
 				return
 			default:
-				h.logger.Err(err).Msg("error occurred during parsing token")
+				log.Err(err).Msg("error occurred during parsing token")
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
