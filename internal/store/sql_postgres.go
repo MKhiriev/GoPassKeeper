@@ -7,17 +7,17 @@ import (
 	"fmt"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/rs/zerolog"
 )
 
 type DB struct {
 	*sql.DB
 	errorClassificator ErrorClassificator
-	logger             zerolog.Logger
+	logger             *logger.Logger
 }
 
-func NewConnectPostgres(ctx context.Context, cfg config.DBConfig, log zerolog.Logger) (*DB, error) {
+func NewConnectPostgres(ctx context.Context, cfg config.DBConfig, log *logger.Logger) (*DB, error) {
 	// establish connection
 	conn, err := sql.Open("pgx", cfg.DSN)
 	if err != nil {
