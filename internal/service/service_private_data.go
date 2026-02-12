@@ -30,8 +30,8 @@ func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRe
 	return p.privateDataRepository.Get(ctx, downloadRequests...)
 }
 
-func (p *privateDataService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
-	return p.privateDataRepository.GetAll(ctx)
+func (p *privateDataService) DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
+	return p.privateDataRepository.GetAll(ctx, userID)
 }
 
 func (p *privateDataService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {

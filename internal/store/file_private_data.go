@@ -13,12 +13,12 @@ func NewPrivateDataFileStorage() PrivateDataFileStorage {
 	return &privateDataFileStorage{}
 }
 
-func (p *privateDataFileStorage) SaveBinaryDataToFile(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataFileStorage) SaveBinaryDataToFile(ctx context.Context, fileName string, data ...models.PrivateData) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *privateDataFileStorage) LoadBinaryDataFromFile(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
+func (p *privateDataFileStorage) LoadBinaryDataFromFile(ctx context.Context, fileName string) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -19,18 +19,15 @@ func NewPrivateDataStorage(repository PrivateDataRepository, fileStorage Private
 }
 
 func (p *privateDataStorage) Save(ctx context.Context, data ...models.PrivateData) error {
-	//TODO implement me
-	panic("implement me")
+	return p.repository.SavePrivateData(ctx, data...)
 }
 
 func (p *privateDataStorage) Get(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+	return p.repository.GetPrivateData(ctx, downloadRequests...)
 }
 
-func (p *privateDataStorage) GetAll(ctx context.Context) ([]models.PrivateData, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataStorage) GetAll(ctx context.Context, userID int64) ([]models.PrivateData, error) {
+	return p.repository.GetAllPrivateData(ctx, userID)
 }
 
 func (p *privateDataStorage) Update(ctx context.Context, updateRequests ...models.UpdateRequest) error {

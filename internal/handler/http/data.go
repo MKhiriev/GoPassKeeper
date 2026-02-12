@@ -52,9 +52,17 @@ func (h *Handler) downloadMultiple(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) downloadAllUserData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	log := logger.FromRequest(r)
 
-	requestedData, err := h.services.PrivateDataService.DownloadAllPrivateData(r.Context())
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		log.Error().Str("func", "*Handler.downloadAllUserData").Msg("no user ID was given")
+		http.Error(w, "no user ID was given", http.StatusBadRequest)
+		return
+	}
+
+	requestedData, err := h.services.PrivateDataService.DownloadAllPrivateData(ctx, userID)
 	if err != nil {
 		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.downloadAllUserData").Msg("error downloading all private user data")

@@ -62,13 +62,12 @@ func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, 
 	return v.inner.DownloadPrivateData(ctx, downloadRequests...)
 }
 
-func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
-	_, found := utils.GetUserIDFromContext(ctx)
-	if !found {
+func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
+	if userID == 0 {
 		return nil, ErrValidationNoUserID
 	}
 
-	return v.inner.DownloadAllPrivateData(ctx)
+	return v.inner.DownloadAllPrivateData(ctx, userID)
 }
 
 func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {

@@ -23,7 +23,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 	panic("implement me")
 }
 
-func (p *privateDataRepository) GetAllPrivateData(ctx context.Context) ([]models.PrivateData, error) {
+func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
 	//TODO implement me
 	panic("implement me")
 }
