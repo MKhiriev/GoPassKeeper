@@ -26,8 +26,8 @@ func (p *privateDataService) UploadPrivateData(ctx context.Context, privateData 
 	return p.privateDataRepository.Save(ctx, privateData...)
 }
 
-func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
-	return p.privateDataRepository.Get(ctx, downloadRequests...)
+func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {
+	return p.privateDataRepository.Get(ctx, downloadRequests)
 }
 
 func (p *privateDataService) DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {

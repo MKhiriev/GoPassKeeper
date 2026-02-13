@@ -37,10 +37,10 @@ type PrivateData struct {
 	AdditionalFields *CipheredCustomFields `json:"fields,omitempty"`
 
 	// CreatedAt is the timestamp when the record was created.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt *time.Time `json:"created_at"`
 
 	// UpdatedAt is the timestamp of the last modification.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
 }
 
 // Metadata describes non-secret attributes of a PrivateData item.
@@ -75,6 +75,6 @@ type CustomField struct {
 
 // TableName returns the name of the database table
 // associated with the PrivateData model.
-func (u PrivateData) TableName() string {
+func (u *PrivateData) TableName() string {
 	return "ciphers"
 }

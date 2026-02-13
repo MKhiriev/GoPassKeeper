@@ -8,4 +8,5 @@ var (
 	ErrUserNotFound       = errors.New("user not found")
 
 	ErrPrivateDataNotSaved = errors.New("private data was not saved")
+	ErrPrivateDataNotFound = errors.New("private data was not found")
 )

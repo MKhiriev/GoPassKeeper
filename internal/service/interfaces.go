@@ -9,7 +9,7 @@ import (
 type PrivateDataService interface {
 	UploadPrivateData(ctx context.Context, data ...models.PrivateData) error
 
-	DownloadPrivateData(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error)
+	DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error)
 
 	UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error

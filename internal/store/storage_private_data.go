@@ -22,8 +22,8 @@ func (p *privateDataStorage) Save(ctx context.Context, data ...models.PrivateDat
 	return p.repository.SavePrivateData(ctx, data...)
 }
 
-func (p *privateDataStorage) Get(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
-	return p.repository.GetPrivateData(ctx, downloadRequests...)
+func (p *privateDataStorage) Get(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {
+	return p.repository.GetPrivateData(ctx, downloadRequests)
 }
 
 func (p *privateDataStorage) GetAll(ctx context.Context, userID int64) ([]models.PrivateData, error) {
