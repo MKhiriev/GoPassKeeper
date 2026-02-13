@@ -33,14 +33,14 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) downloadMultiple(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromRequest(r)
 
-	var dataArrayFromBody []models.DownloadRequest
+	var dataArrayFromBody models.DownloadRequest
 	if err := json.NewDecoder(r.Body).Decode(&dataArrayFromBody); err != nil {
 		log.Err(err).Str("func", "*Handler.downloadMultiple").Msg("Invalid JSON was passed")
 		http.Error(w, "Invalid JSON was passed", http.StatusBadRequest)
 		return
 	}
 
-	requestedData, err := h.services.PrivateDataService.DownloadPrivateData(r.Context(), dataArrayFromBody...)
+	requestedData, err := h.services.PrivateDataService.DownloadPrivateData(r.Context(), dataArrayFromBody)
 	if err != nil {
 		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.downloadMultiple").Msg("error downloading private data")
@@ -76,14 +76,14 @@ func (h *Handler) downloadAllUserData(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromRequest(r)
 
-	var dataArrayFromBody []models.UpdateRequest
+	var dataArrayFromBody models.UpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dataArrayFromBody); err != nil {
 		log.Err(err).Str("func", "*Handler.update").Msg("Invalid JSON was passed")
 		http.Error(w, "Invalid JSON was passed", http.StatusBadRequest)
 		return
 	}
 
-	err := h.services.PrivateDataService.UpdatePrivateData(r.Context(), dataArrayFromBody...)
+	err := h.services.PrivateDataService.UpdatePrivateData(r.Context(), dataArrayFromBody)
 	if err != nil {
 		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.update").Msg("error updating private data")
@@ -97,14 +97,14 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromRequest(r)
 
-	var dataArrayFromBody []models.DeleteRequest
+	var dataArrayFromBody models.DeleteRequest
 	if err := json.NewDecoder(r.Body).Decode(&dataArrayFromBody); err != nil {
 		log.Err(err).Str("func", "*Handler.update").Msg("Invalid JSON was passed")
 		http.Error(w, "Invalid JSON was passed", http.StatusBadRequest)
 		return
 	}
 
-	err := h.services.PrivateDataService.DeletePrivateData(r.Context(), dataArrayFromBody...)
+	err := h.services.PrivateDataService.DeletePrivateData(r.Context(), dataArrayFromBody)
 	if err != nil {
 		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.update").Msg("error deleting private data")

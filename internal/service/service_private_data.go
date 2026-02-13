@@ -34,10 +34,10 @@ func (p *privateDataService) DownloadAllPrivateData(ctx context.Context, userID 
 	return p.privateDataRepository.GetAll(ctx, userID)
 }
 
-func (p *privateDataService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {
-	return p.privateDataRepository.Update(ctx, updateRequests...)
+func (p *privateDataService) UpdatePrivateData(ctx context.Context, updateRequests models.UpdateRequest) error {
+	return p.privateDataRepository.Update(ctx, updateRequests)
 }
 
-func (p *privateDataService) DeletePrivateData(ctx context.Context, deleteRequests ...models.DeleteRequest) error {
-	return p.privateDataRepository.Delete(ctx, deleteRequests...)
+func (p *privateDataService) DeletePrivateData(ctx context.Context, deleteRequests models.DeleteRequest) error {
+	return p.privateDataRepository.Delete(ctx, deleteRequests)
 }

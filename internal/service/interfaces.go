@@ -12,8 +12,8 @@ type PrivateDataService interface {
 	DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error)
 
-	UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error
-	DeletePrivateData(ctx context.Context, deleteRequests ...models.DeleteRequest) error
+	UpdatePrivateData(ctx context.Context, updateRequests models.UpdateRequest) error
+	DeletePrivateData(ctx context.Context, deleteRequests models.DeleteRequest) error
 }
 
 type AuthService interface {

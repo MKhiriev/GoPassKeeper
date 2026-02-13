@@ -12,8 +12,8 @@ type PrivateDataStorage interface {
 	Get(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	GetAll(ctx context.Context, userID int64) ([]models.PrivateData, error)
 
-	Update(ctx context.Context, updateRequests ...models.UpdateRequest) error
-	Delete(ctx context.Context, deleteRequests ...models.DeleteRequest) error
+	Update(ctx context.Context, updateRequests models.UpdateRequest) error
+	Delete(ctx context.Context, deleteRequests models.DeleteRequest) error
 }
 
 type PrivateDataRepository interface {

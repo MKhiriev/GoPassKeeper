@@ -13,4 +13,6 @@ var (
 	ErrValidationNoUpdateRequestsProvided   = errors.New("no update requests provided")
 	ErrValidationNoDeleteRequestsProvided   = errors.New("no delete requests provided")
 	ErrValidationNoUserID                   = errors.New("no user ID for private data was given")
+
+	ErrUnauthorizedAccessToDifferentUserData = errors.New("unauthorized access to different user's data")
 )

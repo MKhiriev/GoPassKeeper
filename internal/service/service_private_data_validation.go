@@ -41,25 +41,21 @@ func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, pr
 	return v.inner.UploadPrivateData(ctx, privateData...)
 }
 
-func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, downloadRequests ...models.DownloadRequest) ([]models.PrivateData, error) {
-	if len(downloadRequests) == 0 {
-		return nil, ErrValidationNoDownloadRequestsProvided
-	}
-
+func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {
 	userID, found := utils.GetUserIDFromContext(ctx)
 	if !found {
 		return nil, ErrValidationNoUserID
 	}
 
-	for _, request := range downloadRequests {
-		if err := v.validator.Validate(ctx, request); err != nil {
-			return nil, fmt.Errorf("error during download request validation before saving: %w", err)
-		}
-
-		request.UserID = userID
+	if err := v.validator.Validate(ctx, downloadRequests); err != nil {
+		return nil, fmt.Errorf("error during download request validation before downloading: %w", err)
 	}
 
-	return v.inner.DownloadPrivateData(ctx, downloadRequests...)
+	if downloadRequests.UserID != userID {
+		return nil, ErrUnauthorizedAccessToDifferentUserData
+	}
+
+	return v.inner.DownloadPrivateData(ctx, downloadRequests)
 }
 
 func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
@@ -70,46 +66,44 @@ func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Contex
 	return v.inner.DownloadAllPrivateData(ctx, userID)
 }
 
-func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, updateRequests ...models.UpdateRequest) error {
-	if len(updateRequests) == 0 {
+func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, updateRequests models.UpdateRequest) error {
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return ErrValidationNoUserID
+	}
+
+	if len(updateRequests.PrivateDataUpdates) == 0 {
 		return ErrValidationNoUpdateRequestsProvided
 	}
 
-	userID, found := utils.GetUserIDFromContext(ctx)
-	if !found {
-		return ErrValidationNoUserID
-	}
-
-	for _, request := range updateRequests {
+	for _, request := range updateRequests.PrivateDataUpdates {
 		if err := v.validator.Validate(ctx, request); err != nil {
-			return fmt.Errorf("error during download request validation before saving: %w", err)
+			return fmt.Errorf("error during download request validation before updating: %w", err)
 		}
 
-		request.UserID = userID
+		if request.UserID != userID {
+			return ErrUnauthorizedAccessToDifferentUserData
+		}
 	}
 
-	return v.inner.UpdatePrivateData(ctx, updateRequests...)
+	return v.inner.UpdatePrivateData(ctx, updateRequests)
 }
 
-func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, deleteRequests ...models.DeleteRequest) error {
-	if len(deleteRequests) == 0 {
-		return ErrValidationNoDeleteRequestsProvided
-	}
-
+func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, deleteRequests models.DeleteRequest) error {
 	userID, found := utils.GetUserIDFromContext(ctx)
 	if !found {
 		return ErrValidationNoUserID
 	}
 
-	for _, request := range deleteRequests {
-		if err := v.validator.Validate(ctx, request); err != nil {
-			return fmt.Errorf("error during download request validation before saving: %w", err)
-		}
-
-		request.UserID = userID
+	if err := v.validator.Validate(ctx, deleteRequests); err != nil {
+		return fmt.Errorf("error during download request validation before deleting: %w", err)
 	}
 
-	return v.inner.DeletePrivateData(ctx, deleteRequests...)
+	if deleteRequests.UserID != userID {
+		return ErrUnauthorizedAccessToDifferentUserData
+	}
+
+	return v.inner.DeletePrivateData(ctx, deleteRequests)
 }
 
 func (v *privateDataValidationService) Wrap(wrapper PrivateDataService) PrivateDataService {

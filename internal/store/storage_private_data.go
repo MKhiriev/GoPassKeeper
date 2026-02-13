@@ -30,12 +30,10 @@ func (p *privateDataStorage) GetAll(ctx context.Context, userID int64) ([]models
 	return p.repository.GetAllPrivateData(ctx, userID)
 }
 
-func (p *privateDataStorage) Update(ctx context.Context, updateRequests ...models.UpdateRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataStorage) Update(ctx context.Context, updateRequests models.UpdateRequest) error {
+	return p.repository.UpdatePrivateData(ctx, updateRequests)
 }
 
-func (p *privateDataStorage) Delete(ctx context.Context, deleteRequests ...models.DeleteRequest) error {
-	//TODO implement me
-	panic("implement me")
+func (p *privateDataStorage) Delete(ctx context.Context, deleteRequests models.DeleteRequest) error {
+	return p.repository.DeletePrivateData(ctx, deleteRequests)
 }
