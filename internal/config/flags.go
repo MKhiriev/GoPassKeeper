@@ -69,10 +69,10 @@ func ParseFlags() *StructuredConfig {
 			TokenDuration:   tokenDuration,
 		},
 		Storage: Storage{
-			DB: &DB{
+			DB: DB{
 				DSN: databaseDSN,
 			},
-			Files: &Files{
+			Files: Files{
 				BinaryDataDir: fileStoragePath,
 			},
 		},
