@@ -8,36 +8,33 @@ import (
 )
 
 type StructuredJSONConfig struct {
-	Auth struct {
-		PasswordHashKey string   `env:"PASSWORD_HASH_KEY" json:"password_hash_key"`
-		TokenSignKey    string   `env:"TOKEN_SIGN_KEY" json:"token_sign_key"`
-		TokenIssuer     string   `env:"TOKEN_ISSUER" json:"token_issuer"`
-		TokenDuration   Duration `env:"TOKEN_DURATION" json:"token_duration"`
-	} `envPrefix:"AUTH_" json:"auth,omitempty"`
+	Services struct {
+		PasswordHashKey string   `json:"password_hash_key"`
+		TokenSignKey    string   `json:"token_sign_key"`
+		TokenIssuer     string   `json:"token_issuer"`
+		TokenDuration   Duration `json:"token_duration"`
+		HashKey         string   `json:"hash_key"`
+	} `json:"services,omitempty"`
 
 	Storage struct {
 		DB struct {
-			DSN string `env:"DATABASE_URI" json:"dsn"`
-		} `envPrefix:"DB_" json:"db,omitempty"`
+			DSN string `json:"dsn"`
+		} `json:"db,omitempty"`
 
 		Files struct {
-			BinaryDataDir string `env:"BINARY_DATA_DIR" json:"binary_data_dir"`
-		} `envPrefix:"FILES_" json:"files,omitempty"`
-	} `envPrefix:"STORAGE_" json:"storage,omitempty"`
+			BinaryDataDir string `json:"binary_data_dir"`
+		} `json:"files,omitempty"`
+	} `json:"storage,omitempty"`
 
 	Server struct {
-		HTTPAddress    string   `env:"ADDRESS" json:"http_address"`
-		GRPCAddress    string   `env:"GRPC_ADDRESS" json:"grpc_address"`
-		RequestTimeout Duration `env:"REQUEST_TIMEOUT" json:"request_timeout"`
-	} `envPrefix:"SERVER_" json:"server,omitempty"`
+		HTTPAddress    string   `json:"http_address"`
+		GRPCAddress    string   `json:"grpc_address"`
+		RequestTimeout Duration `json:"request_timeout"`
+	} `json:"server,omitempty"`
 
-	Security struct {
-		HashKey string `env:"HASH_KEY" json:"hash_key"`
-	} `envPrefix:"SECURITY_" json:"security,omitempty"`
+	Adapter struct{} `json:"adapter,omitempty"`
 
-	Adapter struct{} `envPrefix:"ADAPTER_" json:"adapter,omitempty"`
-
-	Workers struct{} `envPrefix:"WORKERS_" json:"workers,omitempty"`
+	Workers struct{} `json:"workers,omitempty"`
 }
 
 func parseJSON(jsonFilePath string) (*StructuredConfig, error) {
@@ -53,11 +50,12 @@ func parseJSON(jsonFilePath string) (*StructuredConfig, error) {
 	}
 
 	cfg := &StructuredConfig{
-		Auth: Auth{
-			PasswordHashKey: jsonCfg.Auth.PasswordHashKey,
-			TokenSignKey:    jsonCfg.Auth.TokenSignKey,
-			TokenIssuer:     jsonCfg.Auth.TokenIssuer,
-			TokenDuration:   time.Duration(jsonCfg.Auth.TokenDuration),
+		Services: Services{
+			PasswordHashKey: jsonCfg.Services.PasswordHashKey,
+			TokenSignKey:    jsonCfg.Services.TokenSignKey,
+			TokenIssuer:     jsonCfg.Services.TokenIssuer,
+			TokenDuration:   time.Duration(jsonCfg.Services.TokenDuration),
+			HashKey:         jsonCfg.Services.HashKey,
 		},
 		Storage: Storage{
 			DB: DB{
@@ -71,9 +69,6 @@ func parseJSON(jsonFilePath string) (*StructuredConfig, error) {
 			HTTPAddress:    jsonCfg.Server.HTTPAddress,
 			GRPCAddress:    jsonCfg.Server.GRPCAddress,
 			RequestTimeout: time.Duration(jsonCfg.Server.RequestTimeout),
-		},
-		Security: Security{
-			HashKey: jsonCfg.Security.HashKey,
 		},
 		Adapter:      Adapter{},
 		Workers:      Workers{},

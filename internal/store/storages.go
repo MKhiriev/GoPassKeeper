@@ -1,10 +1,12 @@
 package store
 
+import "github.com/MKhiriev/go-pass-keeper/internal/config"
+
 type Storages struct {
 	UserRepository     UserRepository
 	PrivateDataStorage PrivateDataStorage
 }
 
-func NewServices() *Storages {
-	return &Storages{}
+func NewStorages(cfg config.Storage) (*Storages, error) {
+	return &Storages{}, nil
 }

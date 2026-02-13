@@ -22,7 +22,7 @@ type authService struct {
 	logger *logger.Logger
 }
 
-func NewAuthService(userRepository store.UserRepository, cfg config.Auth, logger *logger.Logger) AuthService {
+func NewAuthService(userRepository store.UserRepository, cfg config.Services, logger *logger.Logger) AuthService {
 	return &authService{
 		userRepository: userRepository,
 		hashKey:        cfg.PasswordHashKey,

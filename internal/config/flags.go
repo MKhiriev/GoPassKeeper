@@ -62,11 +62,12 @@ func ParseFlags() *StructuredConfig {
 	flag.Parse()
 
 	return &StructuredConfig{
-		Auth: Auth{
+		Services: Services{
 			PasswordHashKey: passwordHashKey,
 			TokenSignKey:    tokenSignKey,
 			TokenIssuer:     tokenIssuer,
 			TokenDuration:   tokenDuration,
+			HashKey:         hashKey,
 		},
 		Storage: Storage{
 			DB: DB{
@@ -80,9 +81,6 @@ func ParseFlags() *StructuredConfig {
 			HTTPAddress:    serverAddress.String(),
 			GRPCAddress:    grpcServerAddress.String(),
 			RequestTimeout: requestTimeout,
-		},
-		Security: Security{
-			HashKey: hashKey,
 		},
 		Adapter:      Adapter{},
 		Workers:      Workers{},
