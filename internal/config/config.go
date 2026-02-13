@@ -5,13 +5,13 @@ import (
 )
 
 type StructuredConfig struct {
-	Auth         Auth    `json:"auth"`
-	Storage      Storage `json:"storage"`
-	Server       Server  `json:"server"`
-	Handler      Handler `json:"handler"`
-	Adapter      Adapter `json:"adapter"`
-	Workers      Workers `json:"workers"`
-	JSONFilePath string  `env:"CONFIG" json:"json_file_path"`
+	Auth         Auth     `json:"auth"`
+	Storage      Storage  `json:"storage"`
+	Server       Server   `json:"server"`
+	Security     Security `json:"security"`
+	Adapter      Adapter  `json:"adapter"`
+	Workers      Workers  `json:"workers"`
+	JSONFilePath string   `env:"CONFIG" json:"json_file_path"`
 }
 
 type Storage struct {
@@ -32,7 +32,7 @@ type Server struct {
 	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" json:"request_timeout"`
 }
 
-type Handler struct {
+type Security struct {
 	HashKey string `env:"HASH_KEY" json:"hash_key"`
 }
 
@@ -41,7 +41,7 @@ type DB struct {
 }
 
 type Files struct {
-	BinaryDataDir string `env:"BINARY_DATA_DIR" json:"binary_data_dir"` // todo for now we ignore this
+	BinaryDataDir string `env:"BINARY_DATA_DIR" json:"binary_data_dir"`
 }
 
 type Adapter struct {
