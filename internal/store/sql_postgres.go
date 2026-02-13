@@ -17,7 +17,7 @@ type DB struct {
 	logger             *logger.Logger
 }
 
-func NewConnectPostgres(ctx context.Context, cfg config.DBConfig, log *logger.Logger) (*DB, error) {
+func NewConnectPostgres(ctx context.Context, cfg config.DB, log *logger.Logger) (*DB, error) {
 	// establish connection
 	conn, err := sql.Open("pgx", cfg.DSN)
 	if err != nil {

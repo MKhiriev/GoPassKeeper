@@ -56,9 +56,9 @@ func (b *configBuilder) withJSON() *configBuilder {
 	isJSONSpecified := false
 
 	for _, cfg := range b.configs {
-		if cfg.jsonFilePath != "" {
+		if cfg.JSONFilePath != "" {
 			isJSONSpecified = true
-			jsonPath = cfg.jsonFilePath
+			jsonPath = cfg.JSONFilePath
 		}
 	}
 

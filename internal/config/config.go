@@ -4,33 +4,39 @@ import (
 	"time"
 )
 
-// TODO find the required configs
-// TODO add env and json tags
-
 type StructuredConfig struct {
-	Auth         Auth
-	DB           DBConfig
-	Server       Server
-	Adapter      Adapter
-	Workers      Workers
-	jsonFilePath string
+	Auth         Auth    `json:"auth"`
+	Storage      Storage `json:"storage"`
+	Server       Server  `json:"server"`
+	Adapter      Adapter `json:"adapter"`
+	Workers      Workers `json:"workers"`
+	JSONFilePath string  `json:"json_file_path"`
 }
 
-type DBConfig struct {
-	DSN string
+type Storage struct {
+	DB    *DB    `json:"db"`
+	Files *Files `json:"files"`
 }
 
 type Auth struct {
-	PasswordHashKey string
-	TokenSignKey    string
-	TokenIssuer     string
-	TokenDuration   time.Duration
+	PasswordHashKey string        `json:"password_hash_key"`
+	TokenSignKey    string        `json:"token_sign_key"`
+	TokenIssuer     string        `json:"token_issuer"`
+	TokenDuration   time.Duration `json:"token_duration"`
 }
 
 type Server struct {
-	HTTPAddress    string
-	GRPCAddress    string
-	RequestTimeout time.Duration
+	HTTPAddress    string        `json:"http_address"`
+	GRPCAddress    string        `json:"grpc_address"`
+	RequestTimeout time.Duration `json:"request_timeout"`
+}
+
+type DB struct {
+	DSN string `json:"dsn"`
+}
+
+type Files struct {
+	BinaryDataDir string `json:"binary_data_dir"` // todo for now we ignore this
 }
 
 type Adapter struct {

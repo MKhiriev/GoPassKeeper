@@ -14,7 +14,7 @@ type privateDataRepository struct {
 	*DB
 }
 
-func NewPrivateDataRepository(cfg config.DBConfig, log *logger.Logger) (PrivateDataRepository, error) {
+func NewPrivateDataRepository(cfg config.DB, log *logger.Logger) (PrivateDataRepository, error) {
 	db, err := NewConnectPostgres(context.Background(), cfg, log)
 	if err != nil {
 		log.Err(err).Msg("connection to database failed")
