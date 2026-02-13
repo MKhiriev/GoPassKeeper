@@ -12,5 +12,7 @@ func parseEnv(cfg any) error {
 		return fmt.Errorf("error getting env configs: %w", err)
 	}
 
+	// todo implement method
+
 	return nil
 }

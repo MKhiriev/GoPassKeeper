@@ -8,9 +8,10 @@ type StructuredConfig struct {
 	Auth         Auth    `json:"auth"`
 	Storage      Storage `json:"storage"`
 	Server       Server  `json:"server"`
+	Handler      Handler `json:"handler"`
 	Adapter      Adapter `json:"adapter"`
 	Workers      Workers `json:"workers"`
-	JSONFilePath string  `json:"json_file_path"`
+	JSONFilePath string  `env:"CONFIG" json:"json_file_path"`
 }
 
 type Storage struct {
@@ -19,24 +20,28 @@ type Storage struct {
 }
 
 type Auth struct {
-	PasswordHashKey string        `json:"password_hash_key"`
-	TokenSignKey    string        `json:"token_sign_key"`
-	TokenIssuer     string        `json:"token_issuer"`
-	TokenDuration   time.Duration `json:"token_duration"`
+	PasswordHashKey string        `env:"PASSWORD_HASH_KEY" json:"password_hash_key"`
+	TokenSignKey    string        `env:"TOKEN_SIGN_KEY" json:"token_sign_key"`
+	TokenIssuer     string        `env:"TOKEN_ISSUER" json:"token_issuer"`
+	TokenDuration   time.Duration `env:"TOKEN_DURATION" json:"token_duration"`
 }
 
 type Server struct {
-	HTTPAddress    string        `json:"http_address"`
-	GRPCAddress    string        `json:"grpc_address"`
-	RequestTimeout time.Duration `json:"request_timeout"`
+	HTTPAddress    string        `env:"ADDRESS" json:"http_address"`
+	GRPCAddress    string        `env:"GRPC_ADDRESS" json:"grpc_address"`
+	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" json:"request_timeout"`
+}
+
+type Handler struct {
+	HashKey string `env:"HASH_KEY" json:"hash_key"`
 }
 
 type DB struct {
-	DSN string `json:"dsn"`
+	DSN string `env:"DATABASE_URI" json:"dsn"`
 }
 
 type Files struct {
-	BinaryDataDir string `json:"binary_data_dir"` // todo for now we ignore this
+	BinaryDataDir string `env:"BINARY_DATA_DIR" json:"binary_data_dir"` // todo for now we ignore this
 }
 
 type Adapter struct {
