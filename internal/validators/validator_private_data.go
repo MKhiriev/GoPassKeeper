@@ -18,22 +18,22 @@ func (v *PrivateDataValidator) Validate(ctx context.Context, obj any, fields ...
 	panic("implement me!")
 }
 
-func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data models.PrivateData) error {
+func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data models.PrivateData, fields ...string) error {
 	// TODO implement me!
 	panic("implement me!")
 }
 
-func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, request models.UpdateRequest) error {
+func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, request models.UpdateRequest, fields ...string) error {
 	// TODO implement me!
 	panic("implement me!")
 }
 
-func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, request models.DeleteRequest) error {
+func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, request models.DeleteRequest, fields ...string) error {
 	// TODO implement me!
 	panic("implement me!")
 }
 
-func (v *PrivateDataValidator) validateDownloadDataRequest(ctx context.Context, request models.DownloadRequest) error {
+func (v *PrivateDataValidator) validateDownloadDataRequest(ctx context.Context, request models.DownloadRequest, fields ...string) error {
 	// TODO implement me!
 	panic("implement me!")
 }
