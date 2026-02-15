@@ -11,9 +11,9 @@ type Services struct {
 	PrivateDataService PrivateDataService
 }
 
-func NewServices(storages store.Storages, cfg config.StructuredConfig, logger *logger.Logger) *Services {
+func NewServices(storages *store.Storages, cfg config.Services, logger *logger.Logger) (*Services, error) {
 	return &Services{
-		AuthService:        NewAuthService(storages.UserRepository, cfg.Services, logger),
-		PrivateDataService: NewPrivateDataService(storages.PrivateDataStorage, cfg.Storage, logger),
-	}
+		AuthService:        NewAuthService(storages.UserRepository, cfg, logger),
+		PrivateDataService: NewPrivateDataService(storages.PrivateDataStorage, cfg, logger),
+	}, nil
 }

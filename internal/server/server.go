@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/signal"
 	"syscall"
@@ -15,14 +16,14 @@ type server struct {
 	gRPCServer *grpcServer
 }
 
-func NewServer(handlers handler.Handlers, cfg *config.Server) Server {
+func NewServer(handlers *handler.Handlers, cfg config.Server) (Server, error) {
 	http := newHTTPServer(handlers.HTTP.Init(), cfg)
 	gRPC := newGRPCServer(handlers.GRPC, cfg)
 
 	return &server{
 		httpServer: http,
 		gRPCServer: gRPC,
-	}
+	}, nil
 }
 
 func (s *server) RunServer() {
@@ -42,8 +43,7 @@ func (s *server) Shutdown() {
 func (s *server) run() error {
 	// check if any server was created
 	if s.httpServer == nil && s.gRPCServer == nil {
-		fmt.Println("nothing to run!")
-		return nil
+		return errors.New("no servers to run")
 	}
 
 	idleConnectionsClosed := make(chan struct{})

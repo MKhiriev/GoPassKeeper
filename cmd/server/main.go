@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	"github.com/MKhiriev/go-pass-keeper/internal/handler"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
+	"github.com/MKhiriev/go-pass-keeper/internal/server"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
 )
@@ -31,7 +33,22 @@ func main() {
 		log.Fatal().Err(err).Msg("error creating storages")
 	}
 
-	services, err := service.NewServices(cfg.Storage)
+	services, err := service.NewServices(storages, cfg.Services, log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("error creating services")
+	}
+
+	handlers, err := handler.NewHandlers(services, log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("error creating handlers")
+	}
+
+	servers, err := server.NewServer(handlers, cfg.Server)
+	if err != nil {
+		log.Fatal().Err(err).Msg("error creating server(s)")
+	}
+
+	servers.RunServer()
 }
 
 func printBuildInfo() {

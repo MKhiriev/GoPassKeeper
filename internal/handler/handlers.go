@@ -12,13 +12,16 @@ type Handlers struct {
 	GRPC *grpc.Handler
 }
 
-func NewHandlers(services *service.Services, logger *logger.Logger) error {
+func NewHandlers(services *service.Services, logger *logger.Logger) (*Handlers, error) {
 	httpHandler := http.NewHandler(services, logger)
 	gRPCHandler := grpc.NewHandler(services, logger)
 
 	if httpHandler == nil && gRPCHandler == nil {
-		return errNoHandlersAreCreated
+		return nil, errNoHandlersAreCreated
 	}
 
-	return nil
+	return &Handlers{
+		HTTP: httpHandler,
+		GRPC: gRPCHandler,
+	}, nil
 }

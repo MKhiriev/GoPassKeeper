@@ -15,7 +15,7 @@ type privateDataService struct {
 	logger *logger.Logger
 }
 
-func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg config.Storage, logger *logger.Logger) PrivateDataService {
+func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg config.Services, logger *logger.Logger) PrivateDataService {
 	return &privateDataService{
 		privateDataRepository: privateDataRepository,
 		logger:                logger,

@@ -17,7 +17,7 @@ type grpcServer struct {
 	gRPCNetListener net.Listener
 }
 
-func newGRPCServer(handler *myGRPC.Handler, cfg *config.Server) *grpcServer {
+func newGRPCServer(handler *myGRPC.Handler, cfg config.Server) *grpcServer {
 	return &grpcServer{}
 }
 

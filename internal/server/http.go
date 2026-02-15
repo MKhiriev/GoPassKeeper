@@ -12,7 +12,7 @@ type httpServer struct {
 	server *http.Server
 }
 
-func newHTTPServer(handler http.Handler, cfg *config.Server) *httpServer {
+func newHTTPServer(handler http.Handler, cfg config.Server) *httpServer {
 	return &httpServer{
 		server: &http.Server{
 			Addr:         cfg.HTTPAddress,
