@@ -12,6 +12,7 @@ type Services struct {
 }
 
 func NewServices(storages *store.Storages, cfg config.Services, logger *logger.Logger) (*Services, error) {
+	logger.Info().Msg("creating new services...")
 	return &Services{
 		AuthService:        NewAuthService(storages.UserRepository, cfg, logger),
 		PrivateDataService: NewPrivateDataService(storages.PrivateDataStorage, cfg, logger),

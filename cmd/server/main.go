@@ -28,7 +28,7 @@ func main() {
 
 	log.Debug().Any("config", cfg).Msg("received configs")
 
-	storages, err := store.NewStorages(cfg.Storage)
+	storages, err := store.NewStorages(cfg.Storage, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error creating storages")
 	}
@@ -43,7 +43,7 @@ func main() {
 		log.Fatal().Err(err).Msg("error creating handlers")
 	}
 
-	servers, err := server.NewServer(handlers, cfg.Server)
+	servers, err := server.NewServer(handlers, cfg.Server, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error creating server(s)")
 	}

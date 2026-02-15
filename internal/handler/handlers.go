@@ -13,6 +13,8 @@ type Handlers struct {
 }
 
 func NewHandlers(services *service.Services, logger *logger.Logger) (*Handlers, error) {
+	logger.Info().Msg("creating new handlers...")
+
 	httpHandler := http.NewHandler(services, logger)
 	gRPCHandler := grpc.NewHandler(services, logger)
 

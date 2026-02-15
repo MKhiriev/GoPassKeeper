@@ -9,6 +9,7 @@ import (
 
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/handler"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 )
 
 type server struct {
@@ -16,7 +17,8 @@ type server struct {
 	gRPCServer *grpcServer
 }
 
-func NewServer(handlers *handler.Handlers, cfg config.Server) (Server, error) {
+func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Logger) (Server, error) {
+	logger.Info().Msg("creating new server...")
 	http := newHTTPServer(handlers.HTTP.Init(), cfg)
 	gRPC := newGRPCServer(handlers.GRPC, cfg)
 
