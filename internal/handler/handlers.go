@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/handler/grpc"
 	"github.com/MKhiriev/go-pass-keeper/internal/handler/http"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
@@ -12,18 +13,21 @@ type Handlers struct {
 	GRPC *grpc.Handler
 }
 
-func NewHandlers(services *service.Services, logger *logger.Logger) (*Handlers, error) {
+func NewHandlers(services *service.Services, cfg config.Server, logger *logger.Logger) (*Handlers, error) {
 	logger.Info().Msg("creating new handlers...")
 
-	httpHandler := http.NewHandler(services, logger)
-	gRPCHandler := grpc.NewHandler(services, logger)
+	handlers := &Handlers{}
 
-	if httpHandler == nil && gRPCHandler == nil {
+	if cfg.HTTPAddress != "" {
+		handlers.HTTP = http.NewHandler(services, logger)
+	}
+	if cfg.GRPCAddress != "" {
+		handlers.GRPC = grpc.NewHandler(services, logger)
+	}
+
+	if handlers.HTTP == nil && handlers.GRPC == nil {
 		return nil, errNoHandlersAreCreated
 	}
 
-	return &Handlers{
-		HTTP: httpHandler,
-		GRPC: gRPCHandler,
-	}, nil
+	return handlers, nil
 }

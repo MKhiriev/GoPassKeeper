@@ -38,7 +38,7 @@ func main() {
 		log.Fatal().Err(err).Msg("error creating services")
 	}
 
-	handlers, err := handler.NewHandlers(services, log)
+	handlers, err := handler.NewHandlers(services, cfg.Server, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error creating handlers")
 	}
