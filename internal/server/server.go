@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os/signal"
 	"syscall"
 
@@ -15,6 +14,7 @@ import (
 type server struct {
 	httpServer *httpServer
 	gRPCServer *grpcServer
+	logger     *logger.Logger
 }
 
 func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Logger) (Server, error) {
@@ -22,22 +22,24 @@ func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Log
 	servers := new(server)
 
 	if cfg.HTTPAddress != "" {
-		servers.httpServer = newHTTPServer(handlers.HTTP.Init(), cfg)
+		servers.httpServer = newHTTPServer(handlers.HTTP.Init(), cfg, logger)
 	}
 	if cfg.GRPCAddress != "" {
-		servers.gRPCServer = newGRPCServer(handlers.GRPC, cfg)
+		servers.gRPCServer = newGRPCServer(handlers.GRPC, cfg, logger)
 	}
 
 	if servers.httpServer == nil && servers.gRPCServer == nil {
 		return nil, errNoServersAreCreated
 	}
 
+	servers.logger = logger
+
 	return servers, nil
 }
 
 func (s *server) RunServer() {
 	if err := s.run(); err != nil {
-		fmt.Printf("Error running server: %v \n", err)
+		s.logger.Info().Msgf("Error running server: %v \n", err)
 	}
 }
 
@@ -80,16 +82,16 @@ func (s *server) run() error {
 
 	// launch all created servers
 	if s.httpServer != nil {
-		fmt.Println("Launching HTTP server")
+		s.logger.Info().Msg("Launching HTTP server")
 		go s.httpServer.RunServer()
 	}
 	if s.gRPCServer != nil {
-		fmt.Println("Launching GRPC server")
+		s.logger.Info().Msg("Launching GRPC server")
 		go s.gRPCServer.RunServer()
 	}
 
 	<-idleConnectionsClosed
-	fmt.Println("server Shutdown gracefully")
+	s.logger.Info().Msg("server Shutdown gracefully")
 
 	return nil
 }
