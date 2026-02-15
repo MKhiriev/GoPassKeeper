@@ -98,3 +98,9 @@ type BankCardData struct {
 	// Code is the card security code (CVV/CVC).
 	Code string `json:"code"`
 }
+
+// TableName returns the name of the database table
+// associated with the DataType model.
+func (u *DataType) TableName() string {
+	return "data_types"
+}

@@ -12,17 +12,11 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type DB struct {
-	*sql.DB
-	errorClassificator ErrorClassificator
-	logger             *logger.Logger
-}
-
 func NewConnectPostgres(ctx context.Context, cfg config.DB, log *logger.Logger) (*DB, error) {
 	// establish connection
 	conn, err := sql.Open("pgx", cfg.DSN)
 	if err != nil {
-		log.Err(err).Str("func", "NewConnectPostgres").Msg("error occured during database connection")
+		log.Err(err).Str("func", "NewConnectPostgres").Msg("error occurred during database connection")
 		return nil, fmt.Errorf("error occured during database connection: %w", err)
 	}
 

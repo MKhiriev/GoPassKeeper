@@ -20,6 +20,10 @@ func NewStorages(cfg config.Storage, logger *logger.Logger) (*Storages, error) {
 		return nil, fmt.Errorf("postgres connection error: %w", err)
 	}
 
+	if err := db.Migrate(); err != nil {
+		return nil, fmt.Errorf("migration failed: %w", err)
+	}
+
 	return &Storages{
 		UserRepository:     NewUserRepository(db, logger),
 		PrivateDataStorage: NewPrivateDataStorage(db, cfg, logger),
