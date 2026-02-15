@@ -34,8 +34,10 @@ func NewAuthService(userRepository store.UserRepository, cfg config.Services, lo
 }
 
 func (a *authService) RegisterUser(ctx context.Context, user models.User) (models.User, error) {
+	log := logger.FromContext(ctx)
+
 	if user.Login == "" || user.MasterPassword == "" {
-		a.logger.Error().Any("user", user).Msg("invalid user data provided")
+		log.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
 
@@ -43,7 +45,7 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 
 	registeredUser, err := a.userRepository.CreateUser(ctx, user)
 	if err != nil {
-		a.logger.Err(err).Any("user", user).Msg("user creation ended with error")
+		log.Err(err).Any("user", user).Msg("user creation ended with error")
 		return models.User{}, fmt.Errorf("user creation ended with error: %w", err)
 	}
 
@@ -51,20 +53,22 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 }
 
 func (a *authService) Login(ctx context.Context, user models.User) (models.User, error) {
+	log := logger.FromContext(ctx)
+
 	if user.Login == "" || user.MasterPassword == "" {
-		a.logger.Error().Any("user", user).Msg("invalid user data provided")
+		log.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
 
 	a.hashPassword(&user)
 	foundUser, err := a.userRepository.FindUserByLogin(ctx, user)
 	if err != nil {
-		a.logger.Err(err).Any("user", user).Msg("user search by login failed")
+		log.Err(err).Any("user", user).Msg("user search by login failed")
 		return models.User{}, fmt.Errorf("user search by login failed: %w", err)
 	}
 
 	if foundUser.MasterPassword != user.MasterPassword {
-		a.logger.Err(err).
+		log.Err(err).
 			Int64("id", foundUser.UserID).
 			Str("login", foundUser.Login).
 			Str("typed password", user.MasterPassword).

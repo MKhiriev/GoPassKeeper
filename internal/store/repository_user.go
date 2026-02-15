@@ -23,11 +23,13 @@ func NewUserRepository(db *DB, logger *logger.Logger) UserRepository {
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
+	log := logger.FromContext(ctx)
+
 	row := r.db.QueryRowContext(ctx, createUser, user.Login, user.MasterPassword)
 
 	// create user in db
 	if err := row.Err(); err != nil {
-		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: row is nil")
+		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: row is nil")
 
 		switch postgresError(err) {
 		case pgerrcode.UniqueViolation:
@@ -39,7 +41,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user models.User) (mode
 
 	// scan saved user from db
 	if err := row.Scan(&user.UserID, &user.Login, &user.MasterPassword); err != nil {
-		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
+		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
 		return models.User{}, err
 	}
 
@@ -47,12 +49,14 @@ func (r *userRepository) CreateUser(ctx context.Context, user models.User) (mode
 }
 
 func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) (models.User, error) {
+	log := logger.FromContext(ctx)
+
 	var foundUser models.User
 	row := r.db.QueryRowContext(ctx, findUserByLogin, user.Login)
 
 	// find user by login
 	if err := row.Err(); err != nil {
-		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: row is nil")
+		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: row is nil")
 		switch postgresError(err) {
 		case pgerrcode.NoDataFound:
 			return models.User{}, ErrUserNotFound
@@ -63,7 +67,7 @@ func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) 
 
 	// scan found user from db
 	if err := row.Scan(&foundUser.UserID, &foundUser.Login, &foundUser.MasterPassword); err != nil {
-		r.logger.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
+		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
 		return models.User{}, err
 	}
 
