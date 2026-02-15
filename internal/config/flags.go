@@ -32,6 +32,7 @@ type NetAddress struct {
 //	-token-duration token duration (e.g., "1h", "30m")
 //	-request-timeout request timeout (e.g., "30s", "1m")
 //	-hash-key security hash key
+//	-v/version info about version number of client or server
 func ParseFlags() *StructuredConfig {
 	var serverAddress, grpcServerAddress NetAddress
 	var fileStoragePath string
@@ -44,6 +45,7 @@ func ParseFlags() *StructuredConfig {
 	var tokenDuration time.Duration
 	var requestTimeout time.Duration
 	var hashKey string
+	var version string
 
 	flag.Var(&serverAddress, "a", "Net address host:port")
 	flag.Var(&grpcServerAddress, "grpc-address", "Net grpc server address host:port")
@@ -58,16 +60,19 @@ func ParseFlags() *StructuredConfig {
 	flag.DurationVar(&tokenDuration, "token-duration", 0, "Token duration (e.g., 1h, 30m)")
 	flag.DurationVar(&requestTimeout, "request-timeout", 0, "Request timeout (e.g., 30s, 1m)")
 	flag.StringVar(&hashKey, "hash-key", "", "Security hash key")
+	flag.StringVar(&version, "v", "", "App version number")
+	flag.StringVar(&version, "version", "", "App version number")
 
 	flag.Parse()
 
 	return &StructuredConfig{
-		Services: Services{
+		App: App{
 			PasswordHashKey: passwordHashKey,
 			TokenSignKey:    tokenSignKey,
 			TokenIssuer:     tokenIssuer,
 			TokenDuration:   tokenDuration,
 			HashKey:         hashKey,
+			Version:         version,
 		},
 		Storage: Storage{
 			DB: DB{

@@ -34,7 +34,7 @@ func main() {
 		log.Fatal().Err(err).Msg("error creating storages")
 	}
 
-	services, err := service.NewServices(storages, cfg.Services, log)
+	services, err := service.NewServices(storages, cfg.App, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error creating services")
 	}

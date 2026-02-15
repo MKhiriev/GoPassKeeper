@@ -23,6 +23,10 @@ type AuthService interface {
 	ParseToken(ctx context.Context, tokenString string) (models.Token, error)
 }
 
+type AppInfoService interface {
+	GetAppVersion(ctx context.Context) string
+}
+
 // PrivateDataServiceWrapper defines middleware composition for PrivateDataService.
 // Implementations wrap an existing PrivateDataService to add behavior such as
 // logging or validating.

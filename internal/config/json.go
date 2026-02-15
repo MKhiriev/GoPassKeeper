@@ -8,13 +8,14 @@ import (
 )
 
 type StructuredJSONConfig struct {
-	Services struct {
+	App struct {
 		PasswordHashKey string   `json:"password_hash_key"`
 		TokenSignKey    string   `json:"token_sign_key"`
 		TokenIssuer     string   `json:"token_issuer"`
 		TokenDuration   Duration `json:"token_duration"`
 		HashKey         string   `json:"hash_key"`
-	} `json:"services,omitempty"`
+		Version         string   `json:"version"`
+	} `json:"app,omitempty"`
 
 	Storage struct {
 		DB struct {
@@ -50,12 +51,13 @@ func parseJSON(jsonFilePath string) (*StructuredConfig, error) {
 	}
 
 	cfg := &StructuredConfig{
-		Services: Services{
-			PasswordHashKey: jsonCfg.Services.PasswordHashKey,
-			TokenSignKey:    jsonCfg.Services.TokenSignKey,
-			TokenIssuer:     jsonCfg.Services.TokenIssuer,
-			TokenDuration:   time.Duration(jsonCfg.Services.TokenDuration),
-			HashKey:         jsonCfg.Services.HashKey,
+		App: App{
+			PasswordHashKey: jsonCfg.App.PasswordHashKey,
+			TokenSignKey:    jsonCfg.App.TokenSignKey,
+			TokenIssuer:     jsonCfg.App.TokenIssuer,
+			TokenDuration:   time.Duration(jsonCfg.App.TokenDuration),
+			HashKey:         jsonCfg.App.HashKey,
+			Version:         jsonCfg.App.Version,
 		},
 		Storage: Storage{
 			DB: DB{

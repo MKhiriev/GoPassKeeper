@@ -1,4 +1,7 @@
 {
+  "app": {
+    "version": "v1.0"
+  },
   "services": {
     "password_hash_key": "super-secret-password-hash-key",
     "token_sign_key": "super-secret-token-sign-key",

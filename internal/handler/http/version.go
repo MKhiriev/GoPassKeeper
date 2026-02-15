@@ -1,8 +1,12 @@
 package http
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func (h *Handler) getServerVersion(w http.ResponseWriter, r *http.Request) {
-	// TODO implement me!
-	panic("implement me")
+	serverVersion := h.services.AppInfoService.GetAppVersion(r.Context())
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(serverVersion))
 }

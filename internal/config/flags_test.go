@@ -169,12 +169,12 @@ func TestParseFlags(t *testing.T) {
 				assert.Equal(t, "/var/data", cfg.Storage.Files.BinaryDataDir)
 				assert.Equal(t, "postgres://user:pass@localhost/db", cfg.Storage.DB.DSN)
 				assert.Equal(t, "/path/to/config.json", cfg.JSONFilePath)
-				assert.Equal(t, "hash_secret", cfg.Services.PasswordHashKey)
-				assert.Equal(t, "jwt_secret", cfg.Services.TokenSignKey)
-				assert.Equal(t, "test_issuer", cfg.Services.TokenIssuer)
-				assert.Equal(t, time.Hour, cfg.Services.TokenDuration)
+				assert.Equal(t, "hash_secret", cfg.App.PasswordHashKey)
+				assert.Equal(t, "jwt_secret", cfg.App.TokenSignKey)
+				assert.Equal(t, "test_issuer", cfg.App.TokenIssuer)
+				assert.Equal(t, time.Hour, cfg.App.TokenDuration)
 				assert.Equal(t, 30*time.Second, cfg.Server.RequestTimeout)
-				assert.Equal(t, "security_hash", cfg.Services.HashKey)
+				assert.Equal(t, "security_hash", cfg.App.HashKey)
 			},
 		},
 		{
@@ -194,7 +194,7 @@ func TestParseFlags(t *testing.T) {
 			},
 			validate: func(t *testing.T, cfg *StructuredConfig) {
 				assert.Equal(t, "127.0.0.1:3000", cfg.Server.HTTPAddress)
-				assert.Equal(t, "secret", cfg.Services.TokenSignKey)
+				assert.Equal(t, "secret", cfg.App.TokenSignKey)
 				assert.Empty(t, cfg.Server.GRPCAddress)
 				assert.Empty(t, cfg.Storage.DB.DSN)
 			},
@@ -208,8 +208,8 @@ func TestParseFlags(t *testing.T) {
 				assert.Empty(t, cfg.Storage.DB.DSN)
 				assert.Empty(t, cfg.Storage.Files.BinaryDataDir)
 				assert.Empty(t, cfg.JSONFilePath)
-				assert.Empty(t, cfg.Services.PasswordHashKey)
-				assert.Zero(t, cfg.Services.TokenDuration)
+				assert.Empty(t, cfg.App.PasswordHashKey)
+				assert.Zero(t, cfg.App.TokenDuration)
 			},
 		},
 	}

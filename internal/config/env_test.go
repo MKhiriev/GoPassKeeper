@@ -14,11 +14,11 @@ func TestParseEnv_AllFields(t *testing.T) {
 	envVars := map[string]string{
 		"CONFIG": "/path/to/config.json",
 
-		"SERVICES_PASSWORD_HASH_KEY": "hash_secret",
-		"SERVICES_TOKEN_SIGN_KEY":    "jwt_secret",
-		"SERVICES_TOKEN_ISSUER":      "test_issuer",
-		"SERVICES_TOKEN_DURATION":    "1h",
-		"SERVICES_HASH_KEY":          "security_hash",
+		"APP_PASSWORD_HASH_KEY": "hash_secret",
+		"APP_TOKEN_SIGN_KEY":    "jwt_secret",
+		"APP_TOKEN_ISSUER":      "test_issuer",
+		"APP_TOKEN_DURATION":    "1h",
+		"APP_HASH_KEY":          "security_hash",
 
 		"SERVER_ADDRESS":         "localhost:8080",
 		"SERVER_GRPC_ADDRESS":    "localhost:9090",
@@ -39,16 +39,16 @@ func TestParseEnv_AllFields(t *testing.T) {
 
 	assert.Equal(t, "/path/to/config.json", cfg.JSONFilePath)
 
-	assert.Equal(t, "hash_secret", cfg.Services.PasswordHashKey)
-	assert.Equal(t, "jwt_secret", cfg.Services.TokenSignKey)
-	assert.Equal(t, "test_issuer", cfg.Services.TokenIssuer)
-	assert.Equal(t, time.Hour, cfg.Services.TokenDuration)
+	assert.Equal(t, "hash_secret", cfg.App.PasswordHashKey)
+	assert.Equal(t, "jwt_secret", cfg.App.TokenSignKey)
+	assert.Equal(t, "test_issuer", cfg.App.TokenIssuer)
+	assert.Equal(t, time.Hour, cfg.App.TokenDuration)
 
 	assert.Equal(t, "localhost:8080", cfg.Server.HTTPAddress)
 	assert.Equal(t, "localhost:9090", cfg.Server.GRPCAddress)
 	assert.Equal(t, 30*time.Second, cfg.Server.RequestTimeout)
 
-	assert.Equal(t, "security_hash", cfg.Services.HashKey)
+	assert.Equal(t, "security_hash", cfg.App.HashKey)
 
 	assert.Equal(t, "postgres://user:pass@localhost/db", cfg.Storage.DB.DSN)
 	assert.Equal(t, "/var/data", cfg.Storage.Files.BinaryDataDir)
@@ -57,8 +57,8 @@ func TestParseEnv_AllFields(t *testing.T) {
 func TestParseEnv_PartialFields(t *testing.T) {
 	// Arrange
 	envVars := map[string]string{
-		"SERVICES_TOKEN_SIGN_KEY": "jwt_secret",
-		"SERVER_ADDRESS":          "localhost:8080",
+		"APP_TOKEN_SIGN_KEY": "jwt_secret",
+		"SERVER_ADDRESS":     "localhost:8080",
 	}
 	setEnvVars(t, envVars)
 
@@ -69,11 +69,11 @@ func TestParseEnv_PartialFields(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 
-	// Services partially filled
-	assert.Empty(t, cfg.Services.PasswordHashKey)
-	assert.Equal(t, "jwt_secret", cfg.Services.TokenSignKey)
-	assert.Empty(t, cfg.Services.TokenIssuer)
-	assert.Zero(t, cfg.Services.TokenDuration)
+	// App partially filled
+	assert.Empty(t, cfg.App.PasswordHashKey)
+	assert.Equal(t, "jwt_secret", cfg.App.TokenSignKey)
+	assert.Empty(t, cfg.App.TokenIssuer)
+	assert.Zero(t, cfg.App.TokenDuration)
 
 	// Server partially filled
 	assert.Equal(t, "localhost:8080", cfg.Server.HTTPAddress)
@@ -81,7 +81,7 @@ func TestParseEnv_PartialFields(t *testing.T) {
 	assert.Zero(t, cfg.Server.RequestTimeout)
 
 	// Others untouched
-	assert.Empty(t, cfg.Services.HashKey)
+	assert.Empty(t, cfg.App.HashKey)
 	assert.Empty(t, cfg.Storage.DB.DSN)
 	assert.Empty(t, cfg.Storage.Files.BinaryDataDir)
 	assert.Empty(t, cfg.JSONFilePath)
@@ -102,7 +102,7 @@ func TestParseEnv_EmptyEnv(t *testing.T) {
 	// поэтому "пустота" выражается нулевыми значениями.
 	assert.Equal(t, "", cfg.JSONFilePath)
 
-	assert.Equal(t, Services{}, cfg.Services)
+	assert.Equal(t, App{}, cfg.App)
 	assert.Equal(t, Server{}, cfg.Server)
 	assert.Equal(t, Storage{}, cfg.Storage)
 }
@@ -146,7 +146,7 @@ func TestParseEnv_OnlyStorageFiles(t *testing.T) {
 func TestParseEnv_InvalidDuration(t *testing.T) {
 	// Arrange
 	envVars := map[string]string{
-		"SERVICES_TOKEN_DURATION": "invalid_duration",
+		"APP_TOKEN_DURATION": "invalid_duration",
 	}
 	setEnvVars(t, envVars)
 
@@ -207,10 +207,10 @@ func clearEnvVars(t *testing.T) {
 	keys := []string{
 		"CONFIG",
 
-		"SERVICES_PASSWORD_HASH_KEY",
-		"SERVICES_TOKEN_SIGN_KEY",
-		"SERVICES_TOKEN_ISSUER",
-		"SERVICES_TOKEN_DURATION",
+		"APP_PASSWORD_HASH_KEY",
+		"APP_TOKEN_SIGN_KEY",
+		"APP_TOKEN_ISSUER",
+		"APP_TOKEN_DURATION",
 
 		"SERVER_ADDRESS",
 		"SERVER_GRPC_ADDRESS",

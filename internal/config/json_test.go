@@ -17,7 +17,7 @@ func TestParseJSON_Success(t *testing.T) {
 
 	// Durations in JSON must be valid for time.Duration's TextUnmarshal (string, e.g. "30s").
 	jsonBody := `{
-		"services": {
+		"app": {
 			"password_hash_key": "hash_secret",
 			"token_sign_key": "jwt_secret",
 			"token_issuer": "test_issuer",
@@ -44,16 +44,16 @@ func TestParseJSON_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, "hash_secret", cfg.Services.PasswordHashKey)
-	assert.Equal(t, "jwt_secret", cfg.Services.TokenSignKey)
-	assert.Equal(t, "test_issuer", cfg.Services.TokenIssuer)
-	assert.Equal(t, time.Hour, cfg.Services.TokenDuration)
+	assert.Equal(t, "hash_secret", cfg.App.PasswordHashKey)
+	assert.Equal(t, "jwt_secret", cfg.App.TokenSignKey)
+	assert.Equal(t, "test_issuer", cfg.App.TokenIssuer)
+	assert.Equal(t, time.Hour, cfg.App.TokenDuration)
 
 	assert.Equal(t, "localhost:8080", cfg.Server.HTTPAddress)
 	assert.Equal(t, "localhost:9090", cfg.Server.GRPCAddress)
 	assert.Equal(t, 30*time.Second, cfg.Server.RequestTimeout)
 
-	assert.Equal(t, "security_hash", cfg.Services.HashKey)
+	assert.Equal(t, "security_hash", cfg.App.HashKey)
 
 	assert.Equal(t, "postgres://user:pass@localhost/db", cfg.Storage.DB.DSN)
 	assert.Equal(t, "/var/data", cfg.Storage.Files.BinaryDataDir)
@@ -91,7 +91,7 @@ func TestParseJSON_InvalidDuration(t *testing.T) {
 
 	// token_duration should be a duration string; make it invalid.
 	jsonBody := `{
-		"services": { "token_duration": "not-a-duration" }
+		"app": { "token_duration": "not-a-duration" }
 	}`
 	require.NoError(t, os.WriteFile(p, []byte(jsonBody), 0o600))
 
@@ -143,6 +143,6 @@ func TestParseJSON_PartialObject(t *testing.T) {
 	assert.Zero(t, cfg.Server.RequestTimeout)
 
 	// Others remain zero
-	assert.Equal(t, Services{}, cfg.Services)
+	assert.Equal(t, App{}, cfg.App)
 	assert.Equal(t, Storage{}, cfg.Storage)
 }

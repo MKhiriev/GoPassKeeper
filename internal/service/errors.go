@@ -15,4 +15,6 @@ var (
 	ErrValidationNoUserID                   = errors.New("no user ID for private data was given")
 
 	ErrUnauthorizedAccessToDifferentUserData = errors.New("unauthorized access to different user's data")
+
+	ErrVersionIsNotSpecified = errors.New("version is not specified")
 )
