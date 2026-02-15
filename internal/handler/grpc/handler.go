@@ -12,7 +12,7 @@ type Handler struct {
 }
 
 func NewHandler(services *service.Services, logger *logger.Logger) *Handler {
-	logger.Info().Msg("gRPC handler created")
+	logger.Debug().Msg("gRPC handler created")
 	return &Handler{
 		services: services,
 		logger:   logger,

@@ -5,23 +5,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
 type privateDataRepository struct {
 	*DB
+	logger *logger.Logger
 }
 
-func NewPrivateDataRepository(cfg config.DB, log *logger.Logger) (PrivateDataRepository, error) {
-	db, err := NewConnectPostgres(context.Background(), cfg, log)
-	if err != nil {
-		log.Err(err).Msg("connection to database failed")
-		return nil, err
+func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataRepository {
+	return &privateDataRepository{
+		DB:     db,
+		logger: logger,
 	}
-
-	return &privateDataRepository{db}, nil
 }
 
 func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...models.PrivateData) error {

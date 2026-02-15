@@ -19,13 +19,20 @@ type server struct {
 
 func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Logger) (Server, error) {
 	logger.Info().Msg("creating new server...")
-	http := newHTTPServer(handlers.HTTP.Init(), cfg)
-	gRPC := newGRPCServer(handlers.GRPC, cfg)
+	servers := new(server)
 
-	return &server{
-		httpServer: http,
-		gRPCServer: gRPC,
-	}, nil
+	if cfg.HTTPAddress != "" {
+		servers.httpServer = newHTTPServer(handlers.HTTP.Init(), cfg)
+	}
+	if cfg.GRPCAddress != "" {
+		servers.gRPCServer = newGRPCServer(handlers.GRPC, cfg)
+	}
+
+	if servers.httpServer == nil && servers.gRPCServer == nil {
+		return nil, errNoServersAreCreated
+	}
+
+	return servers, nil
 }
 
 func (s *server) RunServer() {
@@ -36,10 +43,14 @@ func (s *server) RunServer() {
 
 func (s *server) Shutdown() {
 	// finish HTTP server
-	s.httpServer.Shutdown()
+	if s.httpServer != nil {
+		s.httpServer.Shutdown()
+	}
 
 	// finish gRPC server
-	s.gRPCServer.Shutdown()
+	if s.gRPCServer != nil {
+		s.gRPCServer.Shutdown()
+	}
 }
 
 func (s *server) run() error {
@@ -61,11 +72,8 @@ func (s *server) run() error {
 	go func() {
 		<-ctx.Done()
 
-		// finish HTTP server
-		s.httpServer.Shutdown()
-
-		// finish gRPC server
-		s.gRPCServer.Shutdown()
+		// finish started servers
+		s.Shutdown()
 
 		close(idleConnectionsClosed)
 	}()

@@ -3,19 +3,31 @@ package store
 import (
 	"context"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
 type privateDataStorage struct {
 	repository  PrivateDataRepository
 	fileStorage PrivateDataFileStorage // todo for now we ignore it
+
+	logger *logger.Logger
 }
 
-func NewPrivateDataStorage(repository PrivateDataRepository, fileStorage PrivateDataFileStorage) PrivateDataStorage {
-	return &privateDataStorage{
-		repository:  repository,
-		fileStorage: fileStorage,
+func NewPrivateDataStorage(db *DB, cfg config.Storage, logger *logger.Logger) PrivateDataStorage {
+	logger.Debug().Msg("creating private data storage")
+	storage := new(privateDataStorage)
+
+	repository := NewPrivateDataRepository(db, logger)
+	storage.repository = repository
+
+	if cfg.Files.BinaryDataDir != "" {
+		fileStorage := NewPrivateDataFileStorage()
+		storage.fileStorage = fileStorage
 	}
+
+	return storage
 }
 
 func (p *privateDataStorage) Save(ctx context.Context, data ...models.PrivateData) error {

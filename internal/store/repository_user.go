@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
@@ -12,11 +11,11 @@ import (
 
 type userRepository struct {
 	logger *logger.Logger
-	db     *sql.DB
+	db     *DB
 }
 
-func NewUserRepository(db *sql.DB, logger *logger.Logger) UserRepository {
-	logger.Debug().Msg("UserRepository created")
+func NewUserRepository(db *DB, logger *logger.Logger) UserRepository {
+	logger.Debug().Msg("creating user repository")
 	return &userRepository{
 		db:     db,
 		logger: logger,

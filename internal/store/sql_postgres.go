@@ -9,6 +9,7 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/jackc/pgx/v5/pgconn"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type DB struct {
@@ -35,7 +36,7 @@ func NewConnectPostgres(ctx context.Context, cfg config.DB, log *logger.Logger) 
 		log.Err(err).Str("func", "NewConnectPostgres").Msg("error connecting database (ping)")
 		return nil, err
 	}
-	log.Info().Str("func", "NewConnectPostgres").Msg("connected to database successfully")
+	log.Debug().Str("func", "NewConnectPostgres").Msg("connected to database successfully")
 
 	// construct a DB struct
 	db := &DB{

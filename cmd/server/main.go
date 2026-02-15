@@ -26,6 +26,7 @@ func main() {
 		log.Fatal().Err(err).Msg("error getting configs")
 	}
 
+	log.Info().Msg("starting a server")
 	log.Debug().Any("config", cfg).Msg("received configs")
 
 	storages, err := store.NewStorages(cfg.Storage, log)

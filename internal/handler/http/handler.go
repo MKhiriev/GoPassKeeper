@@ -12,7 +12,7 @@ type Handler struct {
 }
 
 func NewHandler(services *service.Services, logger *logger.Logger) *Handler {
-	logger.Info().Msg("http handler created")
+	logger.Debug().Msg("http handler created")
 	return &Handler{
 		services: services,
 		logger:   logger,
