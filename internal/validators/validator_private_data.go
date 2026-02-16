@@ -50,6 +50,11 @@ func (v *PrivateDataValidator) Validate(ctx context.Context, obj any, fields ...
 	case *models.UpdateRequest:
 		return v.validateUpdateDataRequest(ctx, *value, fields...)
 
+	case models.PrivateDataUpdate:
+		return v.validatePrivateDataUpdate(ctx, value, fields...)
+	case *models.PrivateDataUpdate:
+		return v.validatePrivateDataUpdate(ctx, *value, fields...)
+
 	case models.DeleteRequest:
 		return v.validateDeleteDataRequest(ctx, value, fields...)
 	case *models.DeleteRequest:
@@ -155,7 +160,7 @@ func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, re
 
 func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, update models.PrivateDataUpdate, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldID, FieldUserID, FieldMetadata, FieldType, FieldData}
+		fields = []string{FieldID, FieldMetadata, FieldType, FieldData}
 	}
 
 	for _, f := range fields {

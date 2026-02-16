@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
@@ -44,7 +45,7 @@ const (
 		UPDATE ciphers
 		SET updated_at = NOW()`
 	updatePrivateDataWhere = `
-		WHERE id = $1 AND user_id = $2`
+        WHERE id = $%d AND user_id = $%d`
 )
 
 // buildUpdateQuery dynamically builds UPDATE query
@@ -97,10 +98,14 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 
 	// Добавляем WHERE условие
 	queryBuilder.WriteString(" ")
-	queryBuilder.WriteString(updatePrivateDataWhere)
+	//queryBuilder.WriteString(updatePrivateDataWhere)
+	queryBuilder.WriteString(fmt.Sprintf(updatePrivateDataWhere, argIndex, argIndex+1))
 
 	// Добавляем ID и UserID в аргументы
 	args = append(args, update.ID, userID)
+
+	log := logger.FromContext(ctx)
+	log.Info().Str("query", queryBuilder.String()).Any("args", args).Msg("built update query")
 
 	return queryBuilder.String(), args, nil
 }
