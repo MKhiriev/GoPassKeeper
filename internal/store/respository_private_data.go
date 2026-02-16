@@ -235,7 +235,6 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 	log := logger.FromContext(ctx)
 
 	result, err := p.DB.ExecContext(ctx, savePrivateData,
-		data.ID,
 		data.UserID,
 		data.Metadata,
 		data.Type,
@@ -308,7 +307,6 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			Msg("saving private data in transaction")
 
 		result, execErr := stmt.ExecContext(ctx,
-			singleData.ID,
 			singleData.UserID,
 			singleData.Metadata,
 			singleData.Type,
@@ -363,7 +361,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update models.PrivateDataUpdate) error {
 	log := logger.FromContext(ctx)
 
-	query, args, err := p.buildUpdateQuery(update)
+	query, args, err := p.buildUpdateQuery(ctx, update)
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.updateSingleRecord").
@@ -429,7 +427,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 	defer tx.Rollback()
 
 	for idx, update := range updates {
-		query, args, buildErr := p.buildUpdateQuery(update)
+		query, args, buildErr := p.buildUpdateQuery(ctx, update)
 		if buildErr != nil {
 			log.Err(buildErr).
 				Str("func", "privateDataRepository.updateMultipleRecords").

@@ -164,10 +164,6 @@ func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, up
 			if update.ID <= 0 {
 				return ErrInvalidID
 			}
-		case FieldUserID:
-			if update.UserID <= 0 {
-				return ErrInvalidUserID
-			}
 		case FieldMetadata:
 			if update.Metadata != nil && len(*update.Metadata) == 0 {
 				return ErrEmptyMetadata

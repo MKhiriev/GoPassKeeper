@@ -1,9 +1,11 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
@@ -26,7 +28,6 @@ const (
 	getRequestedPrivateDataWhereType = ` AND type = ANY($%d)`
 
 	savePrivateData = `INSERT INTO ciphers (
-			id, 
 			user_id, 
 			metadata, 
 			type, 
@@ -34,7 +35,7 @@ const (
 			notes, 
 			additional_fields, 
 			created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+		) VALUES ($1, $2, $3, $4, $5, $6, $7);`
 
 	deletePrivateData = `DELETE FROM ciphers
 		WHERE user_id = $1 AND id = ANY($2);`
@@ -47,9 +48,11 @@ const (
 )
 
 // buildUpdateQuery dynamically builds UPDATE query
-func (p *privateDataRepository) buildUpdateQuery(update models.PrivateDataUpdate) (string, []any, error) {
+func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update models.PrivateDataUpdate) (string, []any, error) {
 	queryBuilder := new(strings.Builder)
 	queryBuilder.WriteString(updatePrivateDataBase)
+
+	userID, _ := utils.GetUserIDFromContext(ctx)
 
 	args := make([]any, 0, 7)
 	setClauses := make([]string, 0, 5)
@@ -97,7 +100,7 @@ func (p *privateDataRepository) buildUpdateQuery(update models.PrivateDataUpdate
 	queryBuilder.WriteString(updatePrivateDataWhere)
 
 	// Добавляем ID и UserID в аргументы
-	args = append(args, update.ID, update.UserID)
+	args = append(args, update.ID, userID)
 
 	return queryBuilder.String(), args, nil
 }

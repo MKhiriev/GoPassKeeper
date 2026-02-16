@@ -33,7 +33,7 @@ ON CONFLICT (id) DO NOTHING;
 -- CIPHERS (PrivateData)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS ciphers (
-    id BIGSERIAL,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     type INTEGER NOT NULL REFERENCES data_types(id),
     metadata TEXT NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS ciphers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE,
 
-    PRIMARY KEY (id, user_id, type)
+    UNIQUE (id, user_id, type)
 );
 
 -- +goose StatementEnd
