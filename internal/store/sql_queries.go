@@ -8,8 +8,13 @@ import (
 )
 
 const (
-	createUser      = ``
-	findUserByLogin = ``
+	createUser = `INSERT INTO users (login, master_password, master_password_hint, name) 
+    VALUES ($1, $2, $3, $4) 
+    RETURNING user_id, login, master_password, master_password_hint, name, created_at;`
+
+	findUserByLogin = `SELECT user_id, login, master_password, master_password_hint, name, created_at 
+    FROM users 
+    WHERE login = $1;`
 
 	getAllUserPrivateData = `SELECT *
 		FROM ciphers
