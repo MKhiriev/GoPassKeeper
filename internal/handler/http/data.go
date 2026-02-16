@@ -12,14 +12,14 @@ import (
 func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromRequest(r)
 
-	var dataFromBody models.PrivateData
-	if err := json.NewDecoder(r.Body).Decode(&dataFromBody); err != nil {
+	var uploadRequest models.UploadRequest
+	if err := json.NewDecoder(r.Body).Decode(&uploadRequest); err != nil {
 		log.Err(err).Str("func", "*Handler.upload").Msg("Invalid JSON was passed")
 		http.Error(w, "Invalid JSON was passed", http.StatusBadRequest)
 		return
 	}
 
-	err := h.services.PrivateDataService.UploadPrivateData(r.Context(), dataFromBody)
+	err := h.services.PrivateDataService.UploadPrivateData(r.Context(), uploadRequest)
 	if err != nil {
 		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.upload").Msg("error uploading private data")

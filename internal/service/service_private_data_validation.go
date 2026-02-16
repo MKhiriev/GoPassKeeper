@@ -20,8 +20,8 @@ func NewPrivateDataValidationService() PrivateDataServiceWrapper {
 	}
 }
 
-func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
-	if len(privateData) == 0 {
+func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, uploadRequest models.UploadRequest) error {
+	if len(uploadRequest.PrivateData) == 0 {
 		return ErrValidationNoPrivateDataProvided
 	}
 
@@ -30,15 +30,17 @@ func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, pr
 		return ErrValidationNoUserID
 	}
 
-	for _, data := range privateData {
+	for _, data := range uploadRequest.PrivateData {
+		if data.UserID == 0 {
+			data.UserID = userID
+		}
+
 		if err := v.validator.Validate(ctx, data); err != nil {
 			return fmt.Errorf("error during private data validation before saving: %w", err)
 		}
-
-		data.UserID = userID
 	}
 
-	return v.inner.UploadPrivateData(ctx, privateData...)
+	return v.inner.UploadPrivateData(ctx, uploadRequest)
 }
 
 func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {
@@ -76,13 +78,13 @@ func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, up
 		return ErrValidationNoUpdateRequestsProvided
 	}
 
+	if updateRequests.UserID != userID {
+		return ErrUnauthorizedAccessToDifferentUserData
+	}
+
 	for _, request := range updateRequests.PrivateDataUpdates {
 		if err := v.validator.Validate(ctx, request); err != nil {
 			return fmt.Errorf("error during download request validation before updating: %w", err)
-		}
-
-		if request.UserID != userID {
-			return ErrUnauthorizedAccessToDifferentUserData
 		}
 	}
 

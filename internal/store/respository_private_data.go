@@ -21,7 +21,7 @@ func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataReposito
 	}
 }
 
-func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
 	saveErr := p.savePrivateData(ctx, data...)
@@ -222,7 +222,7 @@ func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteReq
 	return nil
 }
 
-func (p *privateDataRepository) savePrivateData(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataRepository) savePrivateData(ctx context.Context, data ...*models.PrivateData) error {
 	if len(data) == 1 {
 		return p.saveSinglePrivateData(ctx, data[0])
 	}
@@ -231,7 +231,7 @@ func (p *privateDataRepository) savePrivateData(ctx context.Context, data ...mod
 }
 
 // saveSinglePrivateData saves one private data point
-func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data models.PrivateData) error {
+func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data *models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
 	result, err := p.DB.ExecContext(ctx, savePrivateData,
@@ -275,7 +275,7 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 }
 
 // saveMultiplePrivateData saves one private data point using transaction and prepared statement
-func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, data []models.PrivateData) error {
+func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, data []*models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
 	tx, err := p.DB.BeginTx(ctx, nil)

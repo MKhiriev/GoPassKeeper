@@ -16,14 +16,17 @@ type privateDataService struct {
 }
 
 func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg config.App, logger *logger.Logger) PrivateDataService {
-	return &privateDataService{
+	service := &privateDataService{
 		privateDataRepository: privateDataRepository,
 		logger:                logger,
 	}
+	validationService := NewPrivateDataValidationService()
+
+	return validationService.Wrap(service)
 }
 
-func (p *privateDataService) UploadPrivateData(ctx context.Context, privateData ...models.PrivateData) error {
-	return p.privateDataRepository.Save(ctx, privateData...)
+func (p *privateDataService) UploadPrivateData(ctx context.Context, uploadRequest models.UploadRequest) error {
+	return p.privateDataRepository.Save(ctx, uploadRequest.PrivateData...)
 }
 
 func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {

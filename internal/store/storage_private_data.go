@@ -30,7 +30,7 @@ func NewPrivateDataStorage(db *DB, cfg config.Storage, logger *logger.Logger) Pr
 	return storage
 }
 
-func (p *privateDataStorage) Save(ctx context.Context, data ...models.PrivateData) error {
+func (p *privateDataStorage) Save(ctx context.Context, data ...*models.PrivateData) error {
 	return p.repository.SavePrivateData(ctx, data...)
 }
 

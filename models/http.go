@@ -1,5 +1,12 @@
 package models
 
+// UploadRequest represents a batch upload request for storing vault items.
+// Used to insert multiple encrypted records in a single operation.
+type UploadRequest struct {
+	// PrivateData contains one or more vault items to be stored.
+	PrivateData []*PrivateData `json:"private_data"`
+}
+
 // DownloadRequest represents search criteria for querying vault items.
 // Only unencrypted fields can be used for database-level filtering.
 type DownloadRequest struct {
@@ -18,6 +25,10 @@ type DownloadRequest struct {
 
 // UpdateRequest represents a batch update request for vault items.
 type UpdateRequest struct {
+	// UserID is the owner of the data to update.
+	// Required for data isolation and security.
+	UserID int64 `json:"user_id"`
+
 	PrivateDataUpdates []PrivateDataUpdate `json:"private_data_updates"`
 }
 
@@ -37,10 +48,6 @@ type PrivateDataUpdate struct {
 	// ID is the unique identifier of the record to update.
 	// Required.
 	ID int64 `json:"id"`
-
-	// UserID is the owner of the data to update.
-	// Required for data isolation and security.
-	UserID int64 `json:"user_id"`
 
 	// Metadata contains updated non-sensitive descriptive information.
 	// If nil, the field will not be updated.

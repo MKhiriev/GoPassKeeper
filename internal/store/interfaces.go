@@ -7,7 +7,7 @@ import (
 )
 
 type PrivateDataStorage interface {
-	Save(ctx context.Context, data ...models.PrivateData) error
+	Save(ctx context.Context, data ...*models.PrivateData) error
 
 	Get(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	GetAll(ctx context.Context, userID int64) ([]models.PrivateData, error)
@@ -17,7 +17,7 @@ type PrivateDataStorage interface {
 }
 
 type PrivateDataRepository interface {
-	SavePrivateData(ctx context.Context, data ...models.PrivateData) error
+	SavePrivateData(ctx context.Context, data ...*models.PrivateData) error
 
 	GetPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	GetAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error)

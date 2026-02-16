@@ -7,7 +7,7 @@ import (
 )
 
 type PrivateDataService interface {
-	UploadPrivateData(ctx context.Context, data ...models.PrivateData) error
+	UploadPrivateData(ctx context.Context, data models.UploadRequest) error
 
 	DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error)
 	DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error)
