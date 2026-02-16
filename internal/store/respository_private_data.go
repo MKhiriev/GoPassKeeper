@@ -368,7 +368,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		log.Err(err).
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("failed to build update query")
 		return fmt.Errorf("failed to build update query: %w", err)
 	}
@@ -377,7 +376,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		log.Warn().
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("no fields to update, skipping")
 		return nil
 	}
@@ -387,7 +385,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		log.Err(execErr).
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("failed to execute update query")
 		return fmt.Errorf("failed to update private data: %w", execErr)
 	}
@@ -397,7 +394,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		log.Err(rowsErr).
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("failed to get rows affected")
 		return fmt.Errorf("failed to get rows affected: %w", rowsErr)
 	}
@@ -406,7 +402,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		log.Warn().
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("no rows updated (record not found or access denied)")
 		return ErrPrivateDataNotFound
 	}
@@ -414,7 +409,6 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 	log.Info().
 		Str("func", "privateDataRepository.updateSingleRecord").
 		Int64("id", update.ID).
-		Int64("user_id", update.UserID).
 		Msg("successfully updated private data")
 
 	return nil
@@ -441,7 +435,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
 				Int64("id", update.ID).
-				Int64("user_id", update.UserID).
 				Msg("failed to build update query")
 			return fmt.Errorf("failed to build update query at index %d: %w", idx, buildErr)
 		}
@@ -451,7 +444,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Int("iteration", idx+1).
 			Int("total", len(updates)).
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Msg("updating private data in transaction")
 
 		result, execErr := tx.ExecContext(ctx, query, args...)
@@ -460,7 +452,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
 				Int64("id", update.ID).
-				Int64("user_id", update.UserID).
 				Msg("failed to execute update query")
 			return fmt.Errorf("failed to update private data at index %d: %w", idx, execErr)
 		}
@@ -471,7 +462,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
 				Int64("id", update.ID).
-				Int64("user_id", update.UserID).
 				Msg("failed to get rows affected")
 			return fmt.Errorf("failed to get rows affected at index %d: %w", idx, rowsErr)
 		}
@@ -481,7 +471,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
 				Int64("id", update.ID).
-				Int64("user_id", update.UserID).
 				Msg("no rows updated (record not found or access denied)")
 			return ErrPrivateDataNotFound
 		}
@@ -490,7 +479,6 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("iteration", idx+1).
 			Int64("id", update.ID).
-			Int64("user_id", update.UserID).
 			Int64("updated", rowsAffected).
 			Msg("updated record in current iteration")
 	}

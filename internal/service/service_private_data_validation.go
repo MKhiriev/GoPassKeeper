@@ -84,7 +84,7 @@ func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, up
 
 	for _, request := range updateRequests.PrivateDataUpdates {
 		if err := v.validator.Validate(ctx, request); err != nil {
-			return fmt.Errorf("error during download request validation before updating: %w", err)
+			return fmt.Errorf("error during update request validation before updating: %w", err)
 		}
 	}
 
@@ -98,7 +98,7 @@ func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, de
 	}
 
 	if err := v.validator.Validate(ctx, deleteRequests); err != nil {
-		return fmt.Errorf("error during download request validation before deleting: %w", err)
+		return fmt.Errorf("error during delete request validation before deleting: %w", err)
 	}
 
 	if deleteRequests.UserID != userID {
