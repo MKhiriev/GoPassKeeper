@@ -78,8 +78,8 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 		scanErr := rows.Scan(
 			&item.ID,
 			&item.UserID,
-			&item.Metadata,
 			&item.Type,
+			&item.Metadata,
 			&item.Data,
 			&item.Notes,
 			&item.AdditionalFields,
@@ -132,8 +132,8 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 		scanErr := rows.Scan(
 			&data.ID,
 			&data.UserID,
-			&data.Metadata,
 			&data.Type,
+			&data.Metadata,
 			&data.Data,
 			&data.Notes,
 			&data.AdditionalFields,
