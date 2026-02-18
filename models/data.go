@@ -12,6 +12,20 @@ type PrivateData struct {
 	// UserID is the owner of this private data entry.
 	UserID int64 `json:"user_id"`
 
+	// Hash is an integrity checksum derived from the item's content fields:
+	// Hash(Metadata, Type, Data, Notes, AdditionalFields).
+	// Used to detect changes between client and server versions of the record
+	// without comparing the full encrypted payload.
+	Hash string `json:"hash"`
+
+	// Version is a monotonic sequence number used for optimistic concurrency control.
+	// It is incremented by the server on every successful update.
+	// During synchronization, the client sends its local version as 'base_version'.
+	// The server rejects the update if the 'base_version' does not match the current
+	// version in the database, preventing accidental overwrites of concurrent changes
+	// from other devices.
+	Version int64 `json:"version"`
+
 	// Metadata contains non-sensitive descriptive information
 	// such as display name and folder placement.
 	// Metadata is stored in DB as an encrypted string.
