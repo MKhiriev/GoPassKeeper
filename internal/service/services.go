@@ -6,6 +6,7 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
+	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 )
 
 type Services struct {
@@ -21,6 +22,8 @@ func NewServices(storages *store.Storages, cfg config.App, logger *logger.Logger
 	if err != nil {
 		return nil, fmt.Errorf("error creating app info service: %w", err)
 	}
+
+	utils.InitHasherPool(cfg.HashKey)
 
 	return &Services{
 		AppInfoService:     appService,
