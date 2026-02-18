@@ -78,11 +78,11 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 		scanErr := rows.Scan(
 			&item.ID,
 			&item.UserID,
-			&item.Type,
-			&item.Metadata,
-			&item.Data,
-			&item.Notes,
-			&item.AdditionalFields,
+			&item.Payload.Type,
+			&item.Payload.Metadata,
+			&item.Payload.Data,
+			&item.Payload.Notes,
+			&item.Payload.AdditionalFields,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		)
@@ -132,11 +132,11 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 		scanErr := rows.Scan(
 			&data.ID,
 			&data.UserID,
-			&data.Type,
-			&data.Metadata,
-			&data.Data,
-			&data.Notes,
-			&data.AdditionalFields,
+			&data.Payload.Type,
+			&data.Payload.Metadata,
+			&data.Payload.Data,
+			&data.Payload.Notes,
+			&data.Payload.AdditionalFields,
 			&data.CreatedAt,
 			&data.UpdatedAt,
 		)
@@ -236,11 +236,11 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 
 	result, err := p.DB.ExecContext(ctx, savePrivateData,
 		data.UserID,
-		data.Metadata,
-		data.Type,
-		data.Data,
-		data.Notes,
-		data.AdditionalFields,
+		data.Payload.Metadata,
+		data.Payload.Type,
+		data.Payload.Data,
+		data.Payload.Notes,
+		data.Payload.AdditionalFields,
 		data.CreatedAt,
 	)
 	if err != nil {
@@ -308,11 +308,11 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 
 		result, execErr := stmt.ExecContext(ctx,
 			singleData.UserID,
-			singleData.Metadata,
-			singleData.Type,
-			singleData.Data,
-			singleData.Notes,
-			singleData.AdditionalFields,
+			singleData.Payload.Metadata,
+			singleData.Payload.Type,
+			singleData.Payload.Data,
+			singleData.Payload.Notes,
+			singleData.Payload.AdditionalFields,
 			singleData.CreatedAt,
 		)
 		if execErr != nil {

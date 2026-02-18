@@ -91,15 +91,15 @@ func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data mod
 				return ErrInvalidUserID
 			}
 		case FieldMetadata:
-			if len(data.Metadata) == 0 {
+			if len(data.Payload.Metadata) == 0 {
 				return ErrEmptyMetadata
 			}
 		case FieldType:
-			if !isValidDataType(data.Type) {
+			if !isValidDataType(data.Payload.Type) {
 				return ErrInvalidType
 			}
 		case FieldData:
-			if len(data.Data) == 0 {
+			if len(data.Payload.Data) == 0 {
 				return ErrEmptyData
 			}
 		default:
