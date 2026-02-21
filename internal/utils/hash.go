@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"hash"
 	"sync"
 )
@@ -59,4 +60,14 @@ func Hash(data []byte) []byte {
 	hasherPool.Put(h)
 
 	return sum
+}
+
+func HashString(data string, hashKey string) string {
+	return hex.EncodeToString(hashString([]byte(data), hashKey))
+}
+
+func hashString(data []byte, hashKey string) []byte {
+	hasher := hmac.New(sha256.New, []byte(hashKey))
+	hasher.Write(data)
+	return hasher.Sum(nil)
 }
