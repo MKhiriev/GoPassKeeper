@@ -29,9 +29,6 @@ const (
             version,
 			created_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
-
-	deletePrivateData = `DELETE FROM ciphers
-		WHERE user_id = $1 AND id = ANY($2);`
 )
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -104,5 +101,18 @@ func (p *privateDataRepository) buildGetPrivateDataQuery(ctx context.Context, re
 	}
 
 	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built get private data query")
+	return query, args, nil
+}
+
+// buildDeletePrivateDataQuery builds DELETE query for specific IDs
+func (p *privateDataRepository) buildDeletePrivateDataQuery(ctx context.Context, req models.DeleteRequest) (string, []any, error) {
+	qb := psql.Delete("ciphers").Where(sq.Eq{"user_id": req.UserID, "id": req.IDs})
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building delete query: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built delete query")
 	return query, args, nil
 }

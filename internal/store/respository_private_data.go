@@ -181,7 +181,6 @@ func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateReq
 func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteRequest models.DeleteRequest) error {
 	log := logger.FromContext(ctx)
 
-	// Защита: не удаляем без указания конкретных ID
 	if len(deleteRequest.IDs) == 0 {
 		log.Warn().
 			Str("func", "privateDataRepository.deleteSingleRequest").
@@ -190,7 +189,16 @@ func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteReq
 		return nil
 	}
 
-	result, err := p.DB.ExecContext(ctx, deletePrivateData, deleteRequest.UserID, deleteRequest.IDs)
+	query, args, err := p.buildDeletePrivateDataQuery(ctx, deleteRequest)
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.GetAllPrivateData").
+			Int64("user_id", deleteRequest.UserID).
+			Msg("failed to create query")
+		return err
+	}
+
+	result, err := p.DB.ExecContext(ctx, query, args...)
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.deleteSingleRequest").
