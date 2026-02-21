@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -137,6 +139,7 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 			&data.Payload.Data,
 			&data.Payload.Notes,
 			&data.Payload.AdditionalFields,
+			&data.Version,
 			&data.CreatedAt,
 			&data.UpdatedAt,
 		)
@@ -378,30 +381,36 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 		return nil
 	}
 
-	result, execErr := p.DB.ExecContext(ctx, query, args...)
-	if execErr != nil {
-		log.Err(execErr).
+	var updatedID *int64
+	var currentDBVersion *int64
+
+	queryRowErr := p.DB.QueryRowContext(ctx, query, args...).Scan(&updatedID, &currentDBVersion)
+	if queryRowErr != nil {
+		if errors.Is(queryRowErr, sql.ErrNoRows) {
+			log.Err(queryRowErr).
+				Str("func", "privateDataRepository.updateSingleRecord").
+				Int64("id", update.ID).
+				Msg("no rows updated (record not found or access denied)")
+
+			return ErrPrivateDataNotFound
+		}
+
+		log.Err(queryRowErr).
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
 			Msg("failed to execute update query")
-		return fmt.Errorf("failed to update private data: %w", execErr)
+		return fmt.Errorf("failed to update private data: %w", err)
 	}
 
-	rowsAffected, rowsErr := result.RowsAffected()
-	if rowsErr != nil {
-		log.Err(rowsErr).
-			Str("func", "privateDataRepository.updateSingleRecord").
-			Int64("id", update.ID).
-			Msg("failed to get rows affected")
-		return fmt.Errorf("failed to get rows affected: %w", rowsErr)
-	}
-
-	if rowsAffected == 0 {
+	// 1. if updatedID == nil, update didn't work because of check `version = provided_version - 1`
+	if updatedID == nil {
 		log.Warn().
-			Str("func", "privateDataRepository.updateSingleRecord").
 			Int64("id", update.ID).
-			Msg("no rows updated (record not found or access denied)")
-		return ErrPrivateDataNotFound
+			Int64("db_version", *currentDBVersion).
+			Int64("provided_version", update.Version).
+			Msg("optimistic lock failed: version mismatch")
+
+		return fmt.Errorf("failed to update private data: %w", ErrVersionConflict)
 	}
 
 	log.Info().
@@ -444,40 +453,45 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Int64("id", update.ID).
 			Msg("updating private data in transaction")
 
-		result, execErr := tx.ExecContext(ctx, query, args...)
-		if execErr != nil {
-			log.Err(execErr).
+		var updatedID *int64
+		var currentDBVersion *int64
+
+		queryRowErr := p.DB.QueryRowContext(ctx, query, args...).Scan(&updatedID, &currentDBVersion)
+		if queryRowErr != nil {
+			if errors.Is(queryRowErr, sql.ErrNoRows) {
+				log.Err(queryRowErr).
+					Str("func", "privateDataRepository.updateMultipleRecords").
+					Int("iteration", idx+1).
+					Int64("id", update.ID).
+					Msg("no rows updated (record not found or access denied)")
+
+				return ErrPrivateDataNotFound
+			}
+
+			log.Err(queryRowErr).
 				Str("func", "privateDataRepository.updateMultipleRecords").
-				Int("iteration", idx+1).
 				Int64("id", update.ID).
+				Int("iteration", idx+1).
 				Msg("failed to execute update query")
-			return fmt.Errorf("failed to update private data at index %d: %w", idx, execErr)
+			return fmt.Errorf("failed to update private data at index %d: %w", idx, queryRowErr)
 		}
 
-		rowsAffected, rowsErr := result.RowsAffected()
-		if rowsErr != nil {
-			log.Err(rowsErr).
-				Str("func", "privateDataRepository.updateMultipleRecords").
-				Int("iteration", idx+1).
-				Int64("id", update.ID).
-				Msg("failed to get rows affected")
-			return fmt.Errorf("failed to get rows affected at index %d: %w", idx, rowsErr)
-		}
-
-		if rowsAffected == 0 {
+		// 1. if updatedID == nil, update didn't work because of check `version = provided_version - 1`
+		if updatedID == nil {
 			log.Warn().
-				Str("func", "privateDataRepository.updateMultipleRecords").
-				Int("iteration", idx+1).
 				Int64("id", update.ID).
-				Msg("no rows updated (record not found or access denied)")
-			return ErrPrivateDataNotFound
+				Int64("db_version", *currentDBVersion).
+				Int("iteration", idx+1).
+				Int64("provided_version", update.Version).
+				Msg("optimistic lock failed: version mismatch")
+
+			return fmt.Errorf("failed to update private data: %w", ErrVersionConflict)
 		}
 
 		log.Debug().
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("iteration", idx+1).
 			Int64("id", update.ID).
-			Int64("updated", rowsAffected).
 			Msg("updated record in current iteration")
 	}
 

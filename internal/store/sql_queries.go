@@ -42,11 +42,14 @@ const (
 	deletePrivateData = `DELETE FROM ciphers
 		WHERE user_id = $1 AND id = ANY($2);`
 
+	// todo implement me!
 	updatePrivateDataBase = `
 		UPDATE ciphers
 		SET updated_at = NOW()`
 	updatePrivateDataWhere = `
         WHERE id = $%d AND user_id = $%d`
+	updatePrivateDataWhereWithVersion = `
+        WHERE id = $%d AND user_id = $%d AND version = $%d - 1`
 )
 
 // buildUpdateQuery dynamically builds UPDATE query
@@ -92,8 +95,8 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 	}
 
 	if update.Version != 0 {
-		setClauses = append(setClauses, fmt.Sprintf("additional_fields = $%d", argIndex))
-		args = append(args, *update.AdditionalFields)
+		setClauses = append(setClauses, fmt.Sprintf("version = $%d", argIndex))
+		args = append(args, update.Version)
 		argIndex++
 	}
 

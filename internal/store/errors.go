@@ -9,4 +9,6 @@ var (
 
 	ErrPrivateDataNotSaved = errors.New("private data was not saved")
 	ErrPrivateDataNotFound = errors.New("private data was not found")
+
+	ErrVersionConflict = errors.New("private data version conflict occurred")
 )
