@@ -76,7 +76,7 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 		qb = qb.Set("version", update.Version)
 	}
 
-	qb = qb.Where(sq.Eq{"id": update.ID, "user_id": userID})
+	qb = qb.Where(sq.Eq{"client_side_id": update.ClientSideID, "user_id": userID})
 
 	query, args, err := qb.ToSql()
 	if err != nil {
