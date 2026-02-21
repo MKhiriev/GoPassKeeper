@@ -29,6 +29,10 @@ const (
             version,
 			created_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+
+	getAllUserPrivateData = `SELECT *
+		FROM ciphers
+		WHERE user_id = $1;`
 )
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)

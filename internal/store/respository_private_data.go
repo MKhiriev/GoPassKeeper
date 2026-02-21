@@ -102,16 +102,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
-	query, args, err := p.buildSelectAllUserDataQuery(ctx, userID)
-	if err != nil {
-		log.Err(err).
-			Str("func", "privateDataRepository.GetAllPrivateData").
-			Int64("user_id", userID).
-			Msg("failed to create query")
-		return nil, err
-	}
-
-	rows, queryErr := p.DB.QueryContext(ctx, query, args)
+	rows, queryErr := p.DB.QueryContext(ctx, getAllUserPrivateData, userID)
 	if queryErr != nil {
 		log.Err(queryErr).
 			Str("func", "privateDataRepository.GetAllPrivateData").
