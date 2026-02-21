@@ -13,6 +13,7 @@ const (
 	FieldMetadata           = "metadata"
 	FieldType               = "type"
 	FieldData               = "data"
+	FieldVersion            = "version"
 	FieldIDs                = "ids"
 	FieldTypes              = "types"
 	FieldPrivateData        = "private_data"
@@ -180,6 +181,10 @@ func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, up
 		case FieldData:
 			if update.Data != nil && len(*update.Data) == 0 {
 				return ErrEmptyData
+			}
+		case FieldVersion:
+			if update.Version <= 0 {
+				return ErrInvalidVersion
 			}
 		default:
 			return ErrUnknownField

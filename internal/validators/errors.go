@@ -15,4 +15,5 @@ var (
 	ErrNoFieldsToUpdate = errors.New("at least one field must be provided for update")
 	ErrEmptyPrivateData = errors.New("private data list cannot be empty")
 	ErrEmptyUpdates     = errors.New("updates list cannot be empty")
+	ErrInvalidVersion   = errors.New("invalid Version")
 )

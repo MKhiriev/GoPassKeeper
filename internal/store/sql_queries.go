@@ -33,10 +33,11 @@ const (
 			metadata, 
 			type, 
 			data, 
-			notes, 
+			notes,
 			additional_fields, 
+            version,
 			created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7);`
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 
 	deletePrivateData = `DELETE FROM ciphers
 		WHERE user_id = $1 AND id = ANY($2);`
@@ -85,6 +86,12 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 	}
 
 	if update.AdditionalFields != nil {
+		setClauses = append(setClauses, fmt.Sprintf("additional_fields = $%d", argIndex))
+		args = append(args, *update.AdditionalFields)
+		argIndex++
+	}
+
+	if update.Version != 0 {
 		setClauses = append(setClauses, fmt.Sprintf("additional_fields = $%d", argIndex))
 		args = append(args, *update.AdditionalFields)
 		argIndex++

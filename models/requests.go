@@ -68,4 +68,12 @@ type PrivateDataUpdate struct {
 	// AdditionalFields contains updated custom user-defined fields.
 	// If nil, the field will not be updated.
 	AdditionalFields *CipheredCustomFields `json:"additional_fields,omitempty"`
+
+	// Version is a monotonic sequence number used for optimistic concurrency control.
+	// It is incremented by the server on every successful update.
+	// During synchronization, the client sends its local version as 'base_version'.
+	// The server rejects the update if the 'base_version' does not match the current
+	// version in the database, preventing accidental overwrites of concurrent changes
+	// from other devices.
+	Version int64 `json:"version"`
 }

@@ -172,12 +172,10 @@ func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateReq
 		return nil
 	}
 
-	// Оптимизация: одно обновление без транзакции
 	if len(updateRequest.PrivateDataUpdates) == 1 {
 		return p.updateSingleRecord(ctx, updateRequest.PrivateDataUpdates[0])
 	}
 
-	// Множественное обновление через транзакцию
 	return p.updateMultipleRecords(ctx, updateRequest.PrivateDataUpdates)
 }
 
@@ -241,6 +239,7 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 		data.Payload.Data,
 		data.Payload.Notes,
 		data.Payload.AdditionalFields,
+		data.Version,
 		data.CreatedAt,
 	)
 	if err != nil {
@@ -313,6 +312,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			singleData.Payload.Data,
 			singleData.Payload.Notes,
 			singleData.Payload.AdditionalFields,
+			singleData.Version,
 			singleData.CreatedAt,
 		)
 		if execErr != nil {
