@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/models"
+	sq "github.com/Masterminds/squirrel"
 )
 
 const (
@@ -19,9 +19,6 @@ const (
     FROM users 
     WHERE login = $1;`
 
-	getAllUserPrivateData = `SELECT *
-		FROM ciphers
-		WHERE user_id = $1;`
 	getRequestedPrivateData = `SELECT *
 		FROM ciphers
 		WHERE user_id = $1`
@@ -52,70 +49,55 @@ const (
         WHERE id = $%d AND user_id = $%d AND version = $%d - 1`
 )
 
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+// buildSelectAllUserDataQuery builds SELECT query for all user private data
+func (p *privateDataRepository) buildSelectAllUserDataQuery(ctx context.Context, userID int64) (string, []any, error) {
+	qb := psql.Select("*").From("ciphers").Where(sq.Eq{"user_id": userID})
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building query for getting all user data: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built select query")
+	return query, args, nil
+}
+
 // buildUpdateQuery dynamically builds UPDATE query
 func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update models.PrivateDataUpdate) (string, []any, error) {
-	queryBuilder := new(strings.Builder)
-	queryBuilder.WriteString(updatePrivateDataBase)
-
 	userID, _ := utils.GetUserIDFromContext(ctx)
 
-	args := make([]any, 0, 7)
-	setClauses := make([]string, 0, 5)
-	argIndex := 1
+	qb := psql.Update("ciphers").
+		Set("updated_at", sq.Expr("NOW()"))
 
-	// Добавляем поля для обновления
 	if update.Metadata != nil {
-		setClauses = append(setClauses, fmt.Sprintf("metadata = $%d", argIndex))
-		args = append(args, *update.Metadata)
-		argIndex++
+		qb = qb.Set("metadata", *update.Metadata)
 	}
-
 	if update.Type != nil {
-		setClauses = append(setClauses, fmt.Sprintf("type = $%d", argIndex))
-		args = append(args, *update.Type)
-		argIndex++
+		qb = qb.Set("type", *update.Type)
 	}
-
 	if update.Data != nil {
-		setClauses = append(setClauses, fmt.Sprintf("data = $%d", argIndex))
-		args = append(args, *update.Data)
-		argIndex++
+		qb = qb.Set("data", *update.Data)
 	}
-
 	if update.Notes != nil {
-		setClauses = append(setClauses, fmt.Sprintf("notes = $%d", argIndex))
-		args = append(args, *update.Notes)
-		argIndex++
+		qb = qb.Set("notes", *update.Notes)
 	}
-
 	if update.AdditionalFields != nil {
-		setClauses = append(setClauses, fmt.Sprintf("additional_fields = $%d", argIndex))
-		args = append(args, *update.AdditionalFields)
-		argIndex++
+		qb = qb.Set("additional_fields", *update.AdditionalFields)
 	}
-
 	if update.Version != 0 {
-		setClauses = append(setClauses, fmt.Sprintf("version = $%d", argIndex))
-		args = append(args, update.Version)
-		argIndex++
+		qb = qb.Set("version", update.Version)
 	}
 
-	// Если есть поля для обновления, добавляем их в запрос
-	if len(setClauses) > 0 {
-		queryBuilder.WriteString(", ")
-		queryBuilder.WriteString(strings.Join(setClauses, ", "))
+	qb = qb.Where(sq.Eq{"id": update.ID, "user_id": userID})
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, err
 	}
 
-	// Добавляем WHERE условие
-	queryBuilder.WriteString(" ")
-	//queryBuilder.WriteString(updatePrivateDataWhere)
-	queryBuilder.WriteString(fmt.Sprintf(updatePrivateDataWhere, argIndex, argIndex+1))
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built update query")
 
-	// Добавляем ID и UserID в аргументы
-	args = append(args, update.ID, userID)
-
-	log := logger.FromContext(ctx)
-	log.Info().Str("query", queryBuilder.String()).Any("args", args).Msg("built update query")
-
-	return queryBuilder.String(), args, nil
+	return query, args, nil
 }
