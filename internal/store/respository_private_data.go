@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/models"
@@ -38,27 +37,14 @@ func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*mo
 func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequest models.DownloadRequest) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
-	queryBuilder := new(strings.Builder)
-	queryBuilder.Grow(len(getRequestedPrivateData) * 2)
-
-	queryBuilder.WriteString(getRequestedPrivateData)
-
-	args := []any{downloadRequest.UserID}
-	argIndex := 2
-
-	if len(downloadRequest.IDs) > 0 {
-		queryBuilder.WriteString(fmt.Sprintf(getRequestedPrivateDataWhereID, argIndex))
-		args = append(args, downloadRequest.IDs)
-		argIndex++
+	query, args, err := p.buildGetPrivateDataQuery(ctx, downloadRequest)
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.GetPrivateData").
+			Int64("user_id", downloadRequest.UserID).
+			Msg("failed to create query")
+		return nil, err
 	}
-
-	if len(downloadRequest.Types) > 0 {
-		queryBuilder.WriteString(fmt.Sprintf(getRequestedPrivateDataWhereType, argIndex))
-		args = append(args, downloadRequest.Types)
-		argIndex++
-	}
-
-	query := queryBuilder.String()
 
 	rows, err := p.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -85,6 +71,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 			&item.Payload.Data,
 			&item.Payload.Notes,
 			&item.Payload.AdditionalFields,
+			&item.Version,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		)

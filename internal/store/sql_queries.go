@@ -19,12 +19,6 @@ const (
     FROM users 
     WHERE login = $1;`
 
-	getRequestedPrivateData = `SELECT *
-		FROM ciphers
-		WHERE user_id = $1`
-	getRequestedPrivateDataWhereID   = ` AND id = ANY($%d)`
-	getRequestedPrivateDataWhereType = ` AND type = ANY($%d)`
-
 	savePrivateData = `INSERT INTO ciphers (
 			user_id, 
 			metadata, 
@@ -38,15 +32,6 @@ const (
 
 	deletePrivateData = `DELETE FROM ciphers
 		WHERE user_id = $1 AND id = ANY($2);`
-
-	// todo implement me!
-	updatePrivateDataBase = `
-		UPDATE ciphers
-		SET updated_at = NOW()`
-	updatePrivateDataWhere = `
-        WHERE id = $%d AND user_id = $%d`
-	updatePrivateDataWhereWithVersion = `
-        WHERE id = $%d AND user_id = $%d AND version = $%d - 1`
 )
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -94,10 +79,30 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("error building query for updating user data: %w", err)
 	}
 
 	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built update query")
 
+	return query, args, nil
+}
+
+// buildGetPrivateDataQuery builds SELECT query with optional ID and Type filters
+func (p *privateDataRepository) buildGetPrivateDataQuery(ctx context.Context, req models.DownloadRequest) (string, []any, error) {
+	qb := psql.Select("*").From("ciphers").Where(sq.Eq{"user_id": req.UserID})
+
+	if len(req.IDs) > 0 {
+		qb = qb.Where(sq.Eq{"id": req.IDs})
+	}
+	if len(req.Types) > 0 {
+		qb = qb.Where(sq.Eq{"type": req.Types})
+	}
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building query for getting private data with filters: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built get private data query")
 	return query, args, nil
 }
