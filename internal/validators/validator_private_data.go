@@ -161,7 +161,7 @@ func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, re
 
 func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, update models.PrivateDataUpdate, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldID, FieldMetadata, FieldType, FieldData}
+		fields = []string{FieldID, FieldMetadata, FieldType, FieldData, FieldVersion}
 	}
 
 	for _, f := range fields {
