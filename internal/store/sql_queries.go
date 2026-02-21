@@ -116,3 +116,34 @@ func (p *privateDataRepository) buildDeletePrivateDataQuery(ctx context.Context,
 	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built delete query")
 	return query, args, nil
 }
+
+// buildCreateUserQuery builds INSERT query with RETURNING clause
+func (r *userRepository) buildCreateUserQuery(ctx context.Context, user models.User) (string, []any, error) {
+	qb := psql.Insert("users").
+		Columns("login", "master_password", "master_password_hint", "name").
+		Values(user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name).
+		Suffix("RETURNING user_id, login, master_password, master_password_hint, name, created_at")
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building create user query: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built create user query")
+	return query, args, nil
+}
+
+// buildFindUserByLoginQuery builds SELECT query for finding user by login
+func (r *userRepository) buildFindUserByLoginQuery(ctx context.Context, login string) (string, []any, error) {
+	qb := psql.Select("user_id", "login", "master_password", "master_password_hint", "name", "created_at").
+		From("users").
+		Where(sq.Eq{"login": login})
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building find user by login query: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built find user by login query")
+	return query, args, nil
+}
