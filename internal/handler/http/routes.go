@@ -46,9 +46,9 @@ func (h *Handler) Init() *chi.Mux {
 		api.Route("/sync", func(sync chi.Router) {
 			sync.Use(h.auth)
 
-			sync.Get("/diff", h.getClientServerDiff)
+			sync.Get("/", h.getClientServerDiff)
 
-			sync.Get("/{type}/{id}", h.syncSpecificUserData)
+			sync.Get("/specific", h.syncSpecificUserData)
 		})
 
 		// client-server sync routes

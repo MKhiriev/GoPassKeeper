@@ -42,6 +42,14 @@ func (p *privateDataStorage) GetAll(ctx context.Context, userID int64) ([]models
 	return p.repository.GetAllPrivateData(ctx, userID)
 }
 
+func (p *privateDataStorage) GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
+	return p.repository.GetAllStates(ctx, userID)
+}
+
+func (p *privateDataStorage) GetStates(ctx context.Context, syncRequest models.SyncRequest) ([]models.PrivateDataState, error) {
+	return p.repository.GetStates(ctx, syncRequest)
+}
+
 func (p *privateDataStorage) Update(ctx context.Context, updateRequests models.UpdateRequest) error {
 	return p.repository.UpdatePrivateData(ctx, updateRequests)
 }

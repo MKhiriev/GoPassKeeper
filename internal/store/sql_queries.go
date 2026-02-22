@@ -19,6 +19,7 @@ const (
     FROM users 
     WHERE login = $1;`
 
+	// todo fix query - add client_side_id to save
 	savePrivateData = `INSERT INTO ciphers (
 			user_id, 
 			metadata, 
@@ -33,6 +34,10 @@ const (
 	getAllUserPrivateData = `SELECT *
 		FROM ciphers
 		WHERE user_id = $1;`
+
+	getAllUserDataState = `SELECT client_side_id, hash, version, deleted, updated_at
+		FROM ciphers
+		WHERE user_id = $1`
 )
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -47,6 +52,22 @@ func (p *privateDataRepository) buildSelectAllUserDataQuery(ctx context.Context,
 	}
 
 	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built select query")
+	return query, args, nil
+}
+
+func (p *privateDataRepository) buildGetStatesSyncQuery(ctx context.Context, syncRequest models.SyncRequest) (string, []any, error) {
+	qb := psql.Select("*").From("ciphers").Where(sq.Eq{"user_id": syncRequest.UserID})
+
+	if len(syncRequest.ClientSideIDs) > 0 {
+		qb = qb.Where(sq.Eq{"client_side_id": syncRequest.ClientSideIDs})
+	}
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("error building query for getting private data states with filters: %w", err)
+	}
+
+	logger.FromContext(ctx).Info().Str("query", query).Any("args", args).Msg("built get private data states query")
 	return query, args, nil
 }
 

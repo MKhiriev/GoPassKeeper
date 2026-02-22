@@ -81,3 +81,8 @@ type PrivateDataUpdate struct {
 	// from other devices.
 	Version int64 `json:"version"`
 }
+
+type SyncRequest struct {
+	UserID        int64    `json:"user_id"`
+	ClientSideIDs []string `json:"client_side_ids"`
+}

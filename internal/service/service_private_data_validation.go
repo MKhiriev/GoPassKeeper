@@ -68,6 +68,37 @@ func (v *privateDataValidationService) DownloadAllPrivateData(ctx context.Contex
 	return v.inner.DownloadAllPrivateData(ctx, userID)
 }
 
+func (v *privateDataValidationService) DownloadUserPrivateDataStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
+	if userID == 0 {
+		return nil, ErrValidationNoUserID
+	}
+
+	return v.inner.DownloadUserPrivateDataStates(ctx, userID)
+}
+
+func (v *privateDataValidationService) DownloadSpecificUserPrivateDataStates(ctx context.Context, syncRequest models.SyncRequest) ([]models.PrivateDataState, error) {
+	userID, found := utils.GetUserIDFromContext(ctx)
+	if !found {
+		return nil, ErrValidationNoUserID
+	}
+
+	if len(syncRequest.ClientSideIDs) == 0 {
+		return nil, ErrValidationNoClientIDsProvidedForSyncRequests
+	}
+
+	if syncRequest.UserID != userID {
+		return nil, ErrUnauthorizedAccessToDifferentUserData
+	}
+
+	for _, request := range syncRequest.ClientSideIDs {
+		if request == "" {
+			return nil, ErrValidationEmptyClientIDProvidedForSyncRequests
+		}
+	}
+
+	return v.inner.DownloadSpecificUserPrivateDataStates(ctx, syncRequest)
+}
+
 func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, updateRequests models.UpdateRequest) error {
 	userID, found := utils.GetUserIDFromContext(ctx)
 	if !found {

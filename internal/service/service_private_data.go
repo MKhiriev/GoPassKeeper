@@ -37,6 +37,14 @@ func (p *privateDataService) DownloadAllPrivateData(ctx context.Context, userID 
 	return p.privateDataRepository.GetAll(ctx, userID)
 }
 
+func (p *privateDataService) DownloadUserPrivateDataStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
+	return p.privateDataRepository.GetAllStates(ctx, userID)
+}
+
+func (p *privateDataService) DownloadSpecificUserPrivateDataStates(ctx context.Context, syncRequest models.SyncRequest) ([]models.PrivateDataState, error) {
+	return p.privateDataRepository.GetStates(ctx, syncRequest)
+}
+
 func (p *privateDataService) UpdatePrivateData(ctx context.Context, updateRequests models.UpdateRequest) error {
 	return p.privateDataRepository.Update(ctx, updateRequests)
 }

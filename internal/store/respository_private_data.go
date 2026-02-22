@@ -152,6 +152,111 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 	return allData, nil
 }
 
+func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
+	log := logger.FromContext(ctx)
+
+	rows, queryErr := p.DB.QueryContext(ctx, getAllUserDataState, userID)
+	if queryErr != nil {
+		log.Err(queryErr).
+			Str("func", "privateDataRepository.GetAllStates").
+			Int64("user_id", userID).
+			Msg("failed to execute query for getting all user private data")
+		return nil, fmt.Errorf("failed to query user private data states: %w", queryErr)
+	}
+	defer rows.Close()
+
+	dataStates := make([]models.PrivateDataState, 0, 50)
+
+	for rows.Next() {
+		var data models.PrivateDataState
+
+		scanErr := rows.Scan(
+			&data.ClientSideID,
+			&data.Hash,
+			&data.Version,
+			&data.Deleted,
+			&data.UpdatedAt,
+		)
+		if scanErr != nil {
+			log.Err(scanErr).
+				Str("func", "privateDataRepository.GetAllStates").
+				Int64("user_id", userID).
+				Msg("failed to scan cipher row")
+			return nil, fmt.Errorf("failed to scan cipher row: %w", scanErr)
+		}
+
+		dataStates = append(dataStates, data)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.GetAllStates").
+			Int64("user_id", userID).
+			Msg("error occurred during rows iteration")
+		return nil, fmt.Errorf("error iterating cipher rows: %w", err)
+	}
+
+	return dataStates, nil
+}
+
+func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest models.SyncRequest) ([]models.PrivateDataState, error) {
+	log := logger.FromContext(ctx)
+
+	userID := syncRequest.UserID
+
+	query, args, err := p.buildGetStatesSyncQuery(ctx, syncRequest)
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.GetStates").
+			Int64("user_id", userID).
+			Msg("failed to create query")
+		return nil, err
+	}
+
+	rows, queryErr := p.DB.QueryContext(ctx, query, args...)
+	if queryErr != nil {
+		log.Err(queryErr).
+			Str("func", "privateDataRepository.GetStates").
+			Int64("user_id", userID).
+			Msg("failed to execute query for getting all user private data")
+		return nil, fmt.Errorf("failed to query user private data: %w", queryErr)
+	}
+	defer rows.Close()
+
+	allData := make([]models.PrivateDataState, 0, 50)
+
+	for rows.Next() {
+		var data models.PrivateDataState
+
+		scanErr := rows.Scan(
+			&data.ClientSideID,
+			&data.Hash,
+			&data.Version,
+			&data.Deleted,
+			&data.UpdatedAt,
+		)
+		if scanErr != nil {
+			log.Err(scanErr).
+				Str("func", "privateDataRepository.GetStates").
+				Int64("user_id", userID).
+				Msg("failed to scan cipher row")
+			return nil, fmt.Errorf("failed to scan cipher row: %w", scanErr)
+		}
+
+		allData = append(allData, data)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.GetStates").
+			Int64("user_id", userID).
+			Msg("error occurred during rows iteration")
+		return nil, fmt.Errorf("error iterating cipher rows: %w", err)
+	}
+
+	return allData, nil
+}
+
 func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateRequest models.UpdateRequest) error {
 	log := logger.FromContext(ctx)
 
