@@ -14,26 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ---- Mock AuthService ----
-
-type mockAuthService struct {
-	parseTokenFn func(ctx context.Context, tokenString string) (models.Token, error)
-}
-
-func (m *mockAuthService) ParseToken(ctx context.Context, tokenString string) (models.Token, error) {
-	return m.parseTokenFn(ctx, tokenString)
-}
-
-func (m *mockAuthService) RegisterUser(_ context.Context, _ models.User) (models.User, error) {
-	panic("not implemented")
-}
-func (m *mockAuthService) Login(_ context.Context, _ models.User) (models.User, error) {
-	panic("not implemented")
-}
-func (m *mockAuthService) CreateToken(_ context.Context, _ models.User) (models.Token, error) {
-	panic("not implemented")
-}
-
 // ---- Helpers ----
 
 func newHandlerWithAuthService(authSvc service.AuthService) *Handler {
