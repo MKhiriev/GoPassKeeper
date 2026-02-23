@@ -1,3 +1,6 @@
+// Package models defines the core domain types used throughout the application.
+// It includes persistence models for vault items, request/response structures
+// for synchronization, and authentication primitives such as JWT tokens.
 package models
 
 import "time"
