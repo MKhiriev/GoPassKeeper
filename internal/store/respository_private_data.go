@@ -23,7 +23,7 @@ func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataReposito
 func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequest models.DownloadRequest) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
-	query, args, err := p.buildGetPrivateDataQuery(ctx, downloadRequest)
+	query, args, err := buildGetPrivateDataQuery(ctx, downloadRequest)
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.GetPrivateData").
@@ -195,7 +195,7 @@ func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest model
 
 	userID := syncRequest.UserID
 
-	query, args, err := p.buildGetStatesSyncQuery(ctx, syncRequest)
+	query, args, err := buildGetStatesSyncQuery(ctx, syncRequest)
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.GetStates").
@@ -532,7 +532,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update models.PrivateDataUpdate) error {
 	log := logger.FromContext(ctx)
 
-	query, args, err := p.buildUpdateQuery(ctx, update)
+	query, args, err := buildUpdateQuery(ctx, update)
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.updateSingleRecord").
@@ -604,7 +604,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 	defer tx.Rollback()
 
 	for idx, update := range updates {
-		query, args, buildErr := p.buildUpdateQuery(ctx, update)
+		query, args, buildErr := buildUpdateQuery(ctx, update)
 		if buildErr != nil {
 			log.Err(buildErr).
 				Str("func", "privateDataRepository.updateMultipleRecords").

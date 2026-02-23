@@ -86,7 +86,7 @@ var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 // buildSelectAllUserDataQuery builds SELECT query for all user private data
 // checked!
-func (p *privateDataRepository) buildSelectAllUserDataQuery(ctx context.Context, userID int64) (string, []any, error) {
+func buildSelectAllUserDataQuery(ctx context.Context, userID int64) (string, []any, error) {
 	qb := psql.Select(
 		"id",
 		"user_id",
@@ -114,7 +114,7 @@ func (p *privateDataRepository) buildSelectAllUserDataQuery(ctx context.Context,
 
 // buildGetPrivateDataQuery builds SELECT query with optional ID filter
 // checked!
-func (p *privateDataRepository) buildGetPrivateDataQuery(ctx context.Context, req models.DownloadRequest) (string, []any, error) {
+func buildGetPrivateDataQuery(ctx context.Context, req models.DownloadRequest) (string, []any, error) {
 	qb := psql.
 		Select(
 			"id",
@@ -148,7 +148,7 @@ func (p *privateDataRepository) buildGetPrivateDataQuery(ctx context.Context, re
 }
 
 // checked!
-func (p *privateDataRepository) buildGetStatesSyncQuery(ctx context.Context, syncRequest models.SyncRequest) (string, []any, error) {
+func buildGetStatesSyncQuery(ctx context.Context, syncRequest models.SyncRequest) (string, []any, error) {
 	qb := psql.
 		Select(
 			"client_side_id",
@@ -182,7 +182,7 @@ func (p *privateDataRepository) buildGetStatesSyncQuery(ctx context.Context, syn
 // Returns a query that always returns a row if the record exists,
 // allowing to distinguish between NotFound and VersionConflict.
 // checked!
-func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update models.PrivateDataUpdate) (string, []any, error) {
+func buildUpdateQuery(ctx context.Context, update models.PrivateDataUpdate) (string, []any, error) {
 	userID, _ := utils.GetUserIDFromContext(ctx)
 
 	setClauses := []string{
@@ -256,7 +256,7 @@ func (p *privateDataRepository) buildUpdateQuery(ctx context.Context, update mod
 }
 
 // buildCreateUserQuery builds INSERT query with RETURNING clause
-func (r *userRepository) buildCreateUserQuery(ctx context.Context, user models.User) (string, []any, error) {
+func buildCreateUserQuery(ctx context.Context, user models.User) (string, []any, error) {
 	qb := psql.Insert("users").
 		Columns("login", "master_password", "master_password_hint", "name").
 		Values(user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name).
@@ -272,7 +272,7 @@ func (r *userRepository) buildCreateUserQuery(ctx context.Context, user models.U
 }
 
 // buildFindUserByLoginQuery builds SELECT query for finding user by login
-func (r *userRepository) buildFindUserByLoginQuery(ctx context.Context, login string) (string, []any, error) {
+func buildFindUserByLoginQuery(ctx context.Context, login string) (string, []any, error) {
 	qb := psql.Select("user_id", "login", "master_password", "master_password_hint", "name", "created_at").
 		From("users").
 		Where(sq.Eq{"login": login})
