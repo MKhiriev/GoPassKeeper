@@ -30,6 +30,10 @@ func NewLogger(role string) *Logger {
 	return &Logger{logger}
 }
 
+func Nop() *Logger {
+	return &Logger{zerolog.Nop()}
+}
+
 func (l *Logger) GetChildLogger() *Logger {
 	return &Logger{l.With().Logger()}
 }
