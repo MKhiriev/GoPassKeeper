@@ -39,28 +39,49 @@ func (m *mockAppInfoSvc) GetAppVersion(_ context.Context) string {
 
 // ---- Mock: PrivateDataService ----
 
-type mockPrivateDataSvc struct{}
+type mockPrivateDataSvc struct {
+	uploadFn      func(ctx context.Context, req models.UploadRequest) error
+	downloadFn    func(ctx context.Context, req models.DownloadRequest) ([]models.PrivateData, error)
+	downloadAllFn func(ctx context.Context, userID int64) ([]models.PrivateData, error)
+	updateFn      func(ctx context.Context, req models.UpdateRequest) error
+	deleteFn      func(ctx context.Context, req models.DeleteRequest) error
+}
 
-func (m *mockPrivateDataSvc) UploadPrivateData(_ context.Context, _ models.UploadRequest) error {
+func (m *mockPrivateDataSvc) UploadPrivateData(ctx context.Context, req models.UploadRequest) error {
+	if m.uploadFn != nil {
+		return m.uploadFn(ctx, req)
+	}
 	return nil
 }
-func (m *mockPrivateDataSvc) DownloadPrivateData(_ context.Context, _ models.DownloadRequest) ([]models.PrivateData, error) {
+func (m *mockPrivateDataSvc) DownloadPrivateData(ctx context.Context, req models.DownloadRequest) ([]models.PrivateData, error) {
+	if m.downloadFn != nil {
+		return m.downloadFn(ctx, req)
+	}
 	return nil, nil
 }
-func (m *mockPrivateDataSvc) DownloadAllPrivateData(_ context.Context, _ int64) ([]models.PrivateData, error) {
+func (m *mockPrivateDataSvc) DownloadAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
+	if m.downloadAllFn != nil {
+		return m.downloadAllFn(ctx, userID)
+	}
 	return nil, nil
 }
-func (m *mockPrivateDataSvc) DownloadUserPrivateDataStates(_ context.Context, _ int64) ([]models.PrivateDataState, error) {
-	return nil, nil
-}
-func (m *mockPrivateDataSvc) DownloadSpecificUserPrivateDataStates(_ context.Context, _ models.SyncRequest) ([]models.PrivateDataState, error) {
-	return nil, nil
-}
-func (m *mockPrivateDataSvc) UpdatePrivateData(_ context.Context, _ models.UpdateRequest) error {
+func (m *mockPrivateDataSvc) UpdatePrivateData(ctx context.Context, req models.UpdateRequest) error {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, req)
+	}
 	return nil
 }
-func (m *mockPrivateDataSvc) DeletePrivateData(_ context.Context, _ models.DeleteRequest) error {
+func (m *mockPrivateDataSvc) DeletePrivateData(ctx context.Context, req models.DeleteRequest) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, req)
+	}
 	return nil
+}
+func (m *mockPrivateDataSvc) DownloadUserPrivateDataStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
+	return nil, nil
+}
+func (m *mockPrivateDataSvc) DownloadSpecificUserPrivateDataStates(ctx context.Context, req models.SyncRequest) ([]models.PrivateDataState, error) {
+	return nil, nil
 }
 
 // ---- Helper ----
