@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestHandler создаёт Handler с nop-логгером (без вывода в stdout).
-func newTestHandler() *Handler {
+// newTraceIDTestHandler создаёт Handler с nop-логгером (без вывода в stdout).
+func newTraceIDTestHandler() *Handler {
 	return &Handler{logger: logger.Nop()}
 }
 
@@ -79,7 +79,7 @@ func TestWithTraceID_TableTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := newTestHandler()
+			h := newTraceIDTestHandler()
 			nextCalled := false
 
 			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,7 @@ func TestWithTraceID_TableTest(t *testing.T) {
 // ---- Генерация уникальных trace ID при отсутствии заголовка ----
 
 func TestWithTraceID_GeneratesUniqueUUIDs(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 	seen := make(map[string]struct{})
 
 	for i := 0; i < 100; i++ {
@@ -137,7 +137,7 @@ func TestWithTraceID_GeneratesUniqueUUIDs(t *testing.T) {
 // ---- Trace ID попадает в контекст запроса ----
 
 func TestWithTraceID_TraceIDInContext(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 
 	t.Run("custom trace ID from header is in context logger", func(t *testing.T) {
 		customID := "trace-context-test"
@@ -180,7 +180,7 @@ func TestWithTraceID_TraceIDInContext(t *testing.T) {
 // ---- Next handler всегда вызывается ----
 
 func TestWithTraceID_AlwaysCallsNext(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 	nextCalled := false
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +200,7 @@ func TestWithTraceID_AlwaysCallsNext(t *testing.T) {
 // ---- Заголовок X-Trace-ID всегда присутствует в ответе ----
 
 func TestWithTraceID_ResponseHeaderAlwaysSet(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 
 	t.Run("without incoming trace ID", func(t *testing.T) {
 		rr, _ := executeWithTraceID(h, "")
@@ -216,7 +216,7 @@ func TestWithTraceID_ResponseHeaderAlwaysSet(t *testing.T) {
 // ---- Concurrent requests — нет гонок ----
 
 func TestWithTraceID_ConcurrentRequests(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -249,7 +249,7 @@ func TestWithTraceID_ConcurrentRequests(t *testing.T) {
 // ---- Оригинальный запрос не мутируется ----
 
 func TestWithTraceID_OriginalRequestNotMutated(t *testing.T) {
-	h := newTestHandler()
+	h := newTraceIDTestHandler()
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
