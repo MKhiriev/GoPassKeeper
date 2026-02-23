@@ -1,7 +1,8 @@
 // Package utils provides general-purpose helper utilities
 // used across different parts of the application.
-// Includes tools for working with context, type-safe keys,
-// and other common operations.
+// Includes tools for working with context, type-safe keys, hashing,
+// HTTP response writing, HTTP client initialization, JWT token generation
+// and validation, and other common operations.
 package utils
 
 import (
