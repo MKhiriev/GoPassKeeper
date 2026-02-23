@@ -8,16 +8,18 @@ import (
 )
 
 const (
-	FieldID                 = "id"
+	FieldClientSideID       = "client_side_id"
 	FieldUserID             = "user_id"
 	FieldMetadata           = "metadata"
 	FieldType               = "type"
 	FieldData               = "data"
+	FieldHash               = "hash"
 	FieldVersion            = "version"
-	FieldIDs                = "ids"
-	FieldTypes              = "types"
+	FieldClientSideIDs      = "client_side_ids"
+	FieldDeleteEntries      = "delete_entries"
 	FieldPrivateData        = "private_data"
 	FieldPrivateDataUpdates = "private_data_updates"
+	FieldUpdatedRecordHash  = "updated_record_hash"
 )
 
 var allowedDataTypes = []models.DataType{
@@ -80,13 +82,18 @@ func isValidDataType(dt models.DataType) bool {
 	return false
 }
 
+// checked!
 func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data models.PrivateData, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldUserID, FieldMetadata, FieldType, FieldData}
+		fields = []string{FieldClientSideID, FieldUserID, FieldMetadata, FieldType, FieldData, FieldHash, FieldVersion}
 	}
 
 	for _, f := range fields {
 		switch f {
+		case FieldClientSideID:
+			if data.ClientSideID == "" {
+				return ErrInvalidClientSideID
+			}
 		case FieldUserID:
 			if data.UserID <= 0 {
 				return ErrInvalidUserID
@@ -103,6 +110,14 @@ func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data mod
 			if len(data.Payload.Data) == 0 {
 				return ErrEmptyData
 			}
+		case FieldHash:
+			if data.Hash == "" {
+				return ErrInvalidHash
+			}
+		case FieldVersion:
+			if data.Version < 0 {
+				return ErrInvalidVersion
+			}
 		default:
 			return ErrUnknownField
 		}
@@ -111,18 +126,23 @@ func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data mod
 	return nil
 }
 
+// checked!
 func (v *PrivateDataValidator) validateUploadRequest(ctx context.Context, request models.UploadRequest, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldPrivateData}
+		fields = []string{FieldUserID, FieldPrivateData}
 	}
 
 	for _, f := range fields {
 		switch f {
+		case FieldUserID:
+			if request.UserID <= 0 {
+				return ErrInvalidUserID
+			}
 		case FieldPrivateData:
-			if len(request.PrivateData) == 0 {
+			if len(request.PrivateDataList) == 0 {
 				return ErrEmptyPrivateData
 			}
-			for i, data := range request.PrivateData {
+			for i, data := range request.PrivateDataList {
 				if err := v.validatePrivateData(ctx, *data); err != nil {
 					return fmt.Errorf("validation error at index %d: %w", i, err)
 				}
@@ -135,13 +155,18 @@ func (v *PrivateDataValidator) validateUploadRequest(ctx context.Context, reques
 	return nil
 }
 
+// checked!
 func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, request models.UpdateRequest, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldPrivateDataUpdates}
+		fields = []string{FieldUserID, FieldPrivateDataUpdates}
 	}
 
 	for _, f := range fields {
 		switch f {
+		case FieldUserID:
+			if request.UserID <= 0 {
+				return ErrInvalidUserID
+			}
 		case FieldPrivateDataUpdates:
 			if len(request.PrivateDataUpdates) == 0 {
 				return ErrEmptyUpdates
@@ -159,48 +184,50 @@ func (v *PrivateDataValidator) validateUpdateDataRequest(ctx context.Context, re
 	return nil
 }
 
+// checked!
 func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, update models.PrivateDataUpdate, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldID, FieldMetadata, FieldType, FieldData, FieldVersion}
+		fields = []string{FieldClientSideID, FieldMetadata, FieldData, FieldVersion, FieldVersion, FieldUpdatedRecordHash}
 	}
 
 	for _, f := range fields {
 		switch f {
-		case FieldID:
-			if update.ID <= 0 {
-				return ErrInvalidID
+		case FieldClientSideID:
+			if update.ClientSideID == "" {
+				return ErrInvalidClientSideID
 			}
 		case FieldMetadata:
-			if update.Metadata != nil && len(*update.Metadata) == 0 {
+			if update.FieldsUpdate.Metadata != nil && len(*update.FieldsUpdate.Metadata) == 0 {
 				return ErrEmptyMetadata
 			}
-		case FieldType:
-			if update.Type != nil && !isValidDataType(*update.Type) {
-				return ErrInvalidType
-			}
 		case FieldData:
-			if update.Data != nil && len(*update.Data) == 0 {
+			if update.FieldsUpdate.Data != nil && len(*update.FieldsUpdate.Data) == 0 {
 				return ErrEmptyData
+			}
+		case FieldUpdatedRecordHash:
+			if update.UpdatedRecordHash == "" {
+				return ErrInvalidUpdatedRecordHash
 			}
 		case FieldVersion:
 			if update.Version <= 0 {
-				return ErrInvalidVersion
+				return ErrInvalidUpdateVersion
 			}
 		default:
 			return ErrUnknownField
 		}
 	}
 
-	if update.Metadata == nil && update.Type == nil && update.Data == nil && update.Notes == nil && update.AdditionalFields == nil {
+	if update.FieldsUpdate.Metadata == nil && update.FieldsUpdate.Data == nil && update.FieldsUpdate.Notes == nil && update.FieldsUpdate.AdditionalFields == nil {
 		return ErrNoFieldsToUpdate
 	}
 
 	return nil
 }
 
+// checked!
 func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, request models.DeleteRequest, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldUserID, FieldIDs}
+		fields = []string{FieldUserID, FieldClientSideIDs}
 	}
 
 	for _, f := range fields {
@@ -209,13 +236,16 @@ func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, re
 			if request.UserID <= 0 {
 				return ErrInvalidUserID
 			}
-		case FieldIDs:
-			if len(request.IDs) == 0 {
-				return ErrEmptyIDs
+		case FieldDeleteEntries:
+			if len(request.DeleteEntries) == 0 {
+				return ErrNoDeleteEntries
 			}
-			for _, id := range request.IDs {
-				if id <= 0 {
-					return ErrInvalidID
+			for _, deleteEntry := range request.DeleteEntries {
+				if deleteEntry.ClientSideID != "" {
+					return ErrInvalidClientSideID
+				}
+				if deleteEntry.Version < 0 {
+					return ErrInvalidVersion
 				}
 			}
 		default:
@@ -226,9 +256,10 @@ func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, re
 	return nil
 }
 
+// checked!
 func (v *PrivateDataValidator) validateDownloadDataRequest(ctx context.Context, request models.DownloadRequest, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldUserID}
+		fields = []string{FieldUserID, FieldClientSideIDs}
 	}
 
 	for _, f := range fields {
@@ -237,16 +268,10 @@ func (v *PrivateDataValidator) validateDownloadDataRequest(ctx context.Context, 
 			if request.UserID <= 0 {
 				return ErrInvalidUserID
 			}
-		case FieldIDs:
-			for _, id := range request.IDs {
-				if id <= 0 {
-					return ErrInvalidID
-				}
-			}
-		case FieldTypes:
-			for _, dataType := range request.Types {
-				if !isValidDataType(dataType) {
-					return ErrInvalidType
+		case FieldClientSideIDs:
+			for _, clientSideID := range request.ClientSideIDs {
+				if clientSideID != "" {
+					return ErrInvalidClientSideID
 				}
 			}
 		default:
