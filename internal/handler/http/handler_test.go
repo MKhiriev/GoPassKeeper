@@ -46,9 +46,9 @@ func TestNewHandler_IndependentInstances(t *testing.T) {
 // Init — route registration
 // ─────────────────────────────────────────────
 
-// newTestHandler builds a Handler suitable for route-registration tests.
+// newTestHandlerWithAppInfoService builds a Handler suitable for route-registration tests.
 // AppInfoService is mocked so that GET /api/version/ does not panic.
-func newTestHandler(t *testing.T) *Handler {
+func newTestHandlerWithAppInfoService(t *testing.T) *Handler {
 	t.Helper()
 
 	svcs := &service.Services{
@@ -59,7 +59,7 @@ func newTestHandler(t *testing.T) *Handler {
 }
 
 func TestInit_ReturnsRouter(t *testing.T) {
-	router := newTestHandler(t).Init()
+	router := newTestHandlerWithAppInfoService(t).Init()
 
 	require.NotNil(t, router)
 }
@@ -93,7 +93,7 @@ var expectedRoutes = []routeCase{
 }
 
 func TestInit_RegistersAllRoutes(t *testing.T) {
-	router := newTestHandler(t).Init()
+	router := newTestHandlerWithAppInfoService(t).Init()
 
 	for _, tc := range expectedRoutes {
 		tc := tc
@@ -114,7 +114,7 @@ func TestInit_RegistersAllRoutes(t *testing.T) {
 }
 
 func TestInit_UnknownRouteReturns404(t *testing.T) {
-	router := newTestHandler(t).Init()
+	router := newTestHandlerWithAppInfoService(t).Init()
 
 	req := httptest.NewRequest(http.MethodGet, "/api/nonexistent", nil)
 	rec := httptest.NewRecorder()
@@ -124,7 +124,7 @@ func TestInit_UnknownRouteReturns404(t *testing.T) {
 }
 
 func TestInit_WrongMethodReturns405(t *testing.T) {
-	router := newTestHandler(t).Init()
+	router := newTestHandlerWithAppInfoService(t).Init()
 
 	// POST /api/version/ is not registered — only GET is.
 	req := httptest.NewRequest(http.MethodPost, "/api/version/", nil)
