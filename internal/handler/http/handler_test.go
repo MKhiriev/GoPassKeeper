@@ -16,7 +16,7 @@ import (
 // ─────────────────────────────────────────────
 
 func TestNewHandler_ReturnsNonNil(t *testing.T) {
-	h := NewHandler(nil, logger.Nop())
+	h := NewHandler(&service.Services{}, logger.Nop())
 
 	require.NotNil(t, h)
 }
@@ -30,14 +30,14 @@ func TestNewHandler_StoresServices(t *testing.T) {
 
 func TestNewHandler_StoresLogger(t *testing.T) {
 	log := logger.Nop()
-	h := NewHandler(nil, log)
+	h := NewHandler(&service.Services{}, log)
 
 	assert.Equal(t, log, h.logger)
 }
 
 func TestNewHandler_IndependentInstances(t *testing.T) {
-	h1 := NewHandler(nil, logger.Nop())
-	h2 := NewHandler(nil, logger.Nop())
+	h1 := NewHandler(&service.Services{}, logger.Nop())
+	h2 := NewHandler(&service.Services{}, logger.Nop())
 
 	assert.NotSame(t, h1, h2)
 }
@@ -46,11 +46,16 @@ func TestNewHandler_IndependentInstances(t *testing.T) {
 // Init — route registration
 // ─────────────────────────────────────────────
 
-// newTraceIDTestHandler builds a Handler with nil services, which is sufficient
-// for route-registration tests that do not invoke handler logic.
+// newTestHandler builds a Handler suitable for route-registration tests.
+// AppInfoService is mocked so that GET /api/version/ does not panic.
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
-	return NewHandler(nil, logger.Nop())
+
+	svcs := &service.Services{
+		AppInfoService: &mockAppInfoService{version: "test-version"},
+	}
+
+	return NewHandler(svcs, logger.Nop())
 }
 
 func TestInit_ReturnsRouter(t *testing.T) {
@@ -70,20 +75,20 @@ var expectedRoutes = []routeCase{
 	// auth
 	{http.MethodPost, "/api/auth/register"},
 	{http.MethodPost, "/api/auth/login"},
-	// auth settings (auth middleware will return 401, not 405/404)
+	// auth settings (auth middleware will return 401, not 404/405)
 	{http.MethodPost, "/api/auth/settings/password/change"},
 	{http.MethodPost, "/api/auth/settings/otp"},
 	{http.MethodDelete, "/api/auth/settings/otp"},
-	// data (auth middleware will return 401, not 405/404)
+	// data (auth middleware will return 401, not 404/405)
 	{http.MethodPost, "/api/data/"},
 	{http.MethodGet, "/api/data/all"},
 	{http.MethodPost, "/api/data/download"},
 	{http.MethodPut, "/api/data/update"},
 	{http.MethodDelete, "/api/data/delete"},
-	// sync
+	// sync (auth middleware will return 401, not 404/405)
 	{http.MethodGet, "/api/sync/"},
 	{http.MethodGet, "/api/sync/specific"},
-	// version
+	// version — no auth, handler is called directly
 	{http.MethodGet, "/api/version/"},
 }
 
@@ -98,8 +103,8 @@ func TestInit_RegistersAllRoutes(t *testing.T) {
 			router.ServeHTTP(rec, req)
 
 			// A registered route returns anything except 404 (not found) or
-			// 405 (method not allowed from our CheckHTTPMethod handler).
-			// Auth-protected routes return 401; that still proves the route exists.
+			// 405 (method not allowed). Auth-protected routes return 401 —
+			// that still proves the route exists.
 			assert.NotEqual(t, http.StatusNotFound, rec.Code,
 				"route not found: %s %s", tc.method, tc.path)
 			assert.NotEqual(t, http.StatusMethodNotAllowed, rec.Code,
