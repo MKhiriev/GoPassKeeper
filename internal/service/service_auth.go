@@ -92,7 +92,7 @@ func (a *authService) CreateToken(ctx context.Context, user models.User) (models
 func (a *authService) ParseToken(ctx context.Context, tokenString string) (models.Token, error) {
 	token, err := utils.ValidateAndParseJWTToken(tokenString, a.tokenSignKey, a.tokenIssuer)
 	if err != nil {
-		return models.Token{}, fmt.Errorf("error parsing JWT token: %w", err)
+		return models.Token{}, ErrTokenIsExpiredOrInvalid
 	}
 
 	return token, nil
