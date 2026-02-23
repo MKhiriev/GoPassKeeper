@@ -330,7 +330,7 @@ func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, up
 // a non-empty ClientSideID and a non-negative Version.
 func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, request models.DeleteRequest, fields ...string) error {
 	if len(fields) == 0 {
-		fields = []string{FieldUserID, FieldClientSideIDs}
+		fields = []string{FieldUserID, FieldDeleteEntries}
 	}
 
 	for _, f := range fields {
