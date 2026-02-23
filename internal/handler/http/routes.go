@@ -29,16 +29,12 @@ func (h *Handler) Init() *chi.Mux {
 		api.Route("/data", func(data chi.Router) {
 			data.Use(h.auth)
 
-			data.Group(func(dataUpload chi.Router) {
-				dataUpload.Use(h.withHashing)
-
-				dataUpload.Post("/", h.upload)
-			})
+			data.With(h.uploadHashing).Post("/", h.upload)
 
 			data.Get("/all", h.downloadAllUserData)
 			data.Post("/download", h.downloadMultiple)
 
-			data.Put("/update", h.update)
+			data.With(h.updateHashing).Put("/update", h.update)
 			data.Delete("/delete", h.delete)
 		})
 
