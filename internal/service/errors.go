@@ -6,7 +6,8 @@ var (
 	ErrInvalidDataProvided = errors.New("invalid data provided")
 	ErrWrongPassword       = errors.New("wrong password")
 
-	ErrTokenIsExpired = errors.New("token is expired")
+	ErrTokenIsExpired          = errors.New("token is expired")
+	ErrTokenIsExpiredOrInvalid = errors.New("token is expired/invalid")
 
 	ErrValidationNoPrivateDataProvided      = errors.New("no private data provided")
 	ErrValidationNoDownloadRequestsProvided = errors.New("no download requests provided")
