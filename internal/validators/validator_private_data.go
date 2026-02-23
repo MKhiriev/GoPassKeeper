@@ -8,18 +8,19 @@ import (
 )
 
 const (
-	FieldClientSideID       = "client_side_id"
-	FieldUserID             = "user_id"
-	FieldMetadata           = "metadata"
-	FieldType               = "type"
-	FieldData               = "data"
-	FieldHash               = "hash"
-	FieldVersion            = "version"
-	FieldClientSideIDs      = "client_side_ids"
-	FieldDeleteEntries      = "delete_entries"
-	FieldPrivateData        = "private_data"
-	FieldPrivateDataUpdates = "private_data_updates"
-	FieldUpdatedRecordHash  = "updated_record_hash"
+	FieldClientSideID                    = "client_side_id"
+	FieldUserID                          = "user_id"
+	FieldMetadata                        = "metadata"
+	FieldType                            = "type"
+	FieldData                            = "data"
+	FieldHash                            = "hash"
+	FieldVersion                         = "version"
+	FieldClientSideIDs                   = "client_side_ids"
+	FieldDeleteEntries                   = "delete_entries"
+	FieldPrivateData                     = "private_data"
+	FieldPrivateDataVersionForDataUpload = "version for data upload"
+	FieldPrivateDataUpdates              = "private_data_updates"
+	FieldUpdatedRecordHash               = "updated_record_hash"
 )
 
 var allowedDataTypes = []models.DataType{
@@ -118,6 +119,10 @@ func (v *PrivateDataValidator) validatePrivateData(ctx context.Context, data mod
 			if data.Version < 0 {
 				return ErrInvalidVersion
 			}
+		case FieldPrivateDataVersionForDataUpload:
+			if data.Version != 0 {
+				return ErrInvalidVersion
+			}
 		default:
 			return ErrUnknownField
 		}
@@ -143,7 +148,7 @@ func (v *PrivateDataValidator) validateUploadRequest(ctx context.Context, reques
 				return ErrEmptyPrivateData
 			}
 			for i, data := range request.PrivateDataList {
-				if err := v.validatePrivateData(ctx, *data); err != nil {
+				if err := v.validatePrivateData(ctx, *data, FieldClientSideID, FieldUserID, FieldMetadata, FieldType, FieldData, FieldHash, FieldPrivateDataVersionForDataUpload); err != nil {
 					return fmt.Errorf("validation error at index %d: %w", i, err)
 				}
 			}

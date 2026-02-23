@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
@@ -20,18 +18,6 @@ func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataReposito
 		DB:     db,
 		logger: logger,
 	}
-}
-
-func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*models.PrivateData) error {
-	log := logger.FromContext(ctx)
-
-	saveErr := p.savePrivateData(ctx, data...)
-	if saveErr != nil {
-		log.Err(saveErr).Str("func", "privateDataRepository.SavePrivateData").Msg("error saving private data to a repository")
-		return saveErr
-	}
-
-	return nil
 }
 
 func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequest models.DownloadRequest) ([]models.PrivateData, error) {
@@ -51,8 +37,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 		log.Err(err).
 			Str("func", "privateDataRepository.GetPrivateData").
 			Int64("user_id", downloadRequest.UserID).
-			Int("ids_count", len(downloadRequest.IDs)).
-			Int("types_count", len(downloadRequest.Types)).
+			Int("client side ids count", len(downloadRequest.ClientSideIDs)).
 			Msg("failed to execute query for getting requested private data")
 		return nil, fmt.Errorf("failed to query requested private data: %w", err)
 	}
@@ -71,9 +56,12 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 			&item.Payload.Data,
 			&item.Payload.Notes,
 			&item.Payload.AdditionalFields,
-			&item.Version,
 			&item.CreatedAt,
 			&item.UpdatedAt,
+			&item.Version,
+			&item.ClientSideID,
+			&item.Hash,
+			&item.Deleted,
 		)
 		if scanErr != nil {
 			log.Err(scanErr).
@@ -112,7 +100,6 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 	}
 	defer rows.Close()
 
-	// Предварительная аллокация с разумным capacity
 	allData := make([]models.PrivateData, 0, 50)
 
 	for rows.Next() {
@@ -126,9 +113,12 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 			&data.Payload.Data,
 			&data.Payload.Notes,
 			&data.Payload.AdditionalFields,
-			&data.Version,
 			&data.CreatedAt,
 			&data.UpdatedAt,
+			&data.Version,
+			&data.ClientSideID,
+			&data.Hash,
+			&data.Deleted,
 		)
 		if scanErr != nil {
 			log.Err(scanErr).
@@ -152,6 +142,7 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 	return allData, nil
 }
 
+// checked!
 func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
 	log := logger.FromContext(ctx)
 
@@ -277,53 +268,154 @@ func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateReq
 func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteRequest models.DeleteRequest) error {
 	log := logger.FromContext(ctx)
 
-	if len(deleteRequest.IDs) == 0 {
+	if len(deleteRequest.DeleteEntries) == 0 {
 		log.Warn().
-			Str("func", "privateDataRepository.deleteSingleRequest").
-			Int64("user_id", deleteRequest.UserID).
-			Msg("no IDs provided for deletion, skipping")
+			Str("func", "privateDataRepository.DeletePrivateData").
+			Msg("no delete requests provided")
 		return nil
 	}
 
-	query, args, err := p.buildDeletePrivateDataQuery(ctx, deleteRequest)
-	if err != nil {
-		log.Err(err).
-			Str("func", "privateDataRepository.GetAllPrivateData").
-			Int64("user_id", deleteRequest.UserID).
-			Msg("failed to create query")
-		return err
+	if len(deleteRequest.DeleteEntries) == 1 {
+		return p.deleteSingleRecord(ctx, deleteRequest)
 	}
 
-	result, err := p.DB.ExecContext(ctx, query, args...)
-	if err != nil {
-		log.Err(err).
-			Str("func", "privateDataRepository.deleteSingleRequest").
-			Int64("user_id", deleteRequest.UserID).
-			Int("ids_count", len(deleteRequest.IDs)).
-			Msg("failed to execute delete query")
-		return fmt.Errorf("failed to delete private data: %w", err)
+	return p.deleteMultipleRecords(ctx, deleteRequest)
+}
+
+func (p *privateDataRepository) deleteSingleRecord(ctx context.Context, deleteRequest models.DeleteRequest) error {
+	log := logger.FromContext(ctx)
+
+	entry := deleteRequest.DeleteEntries[0]
+
+	log.Debug().
+		Str("func", "privateDataRepository.deleteSingleRecord").
+		Str("client_side_id", entry.ClientSideID).
+		Int64("user_id", deleteRequest.UserID).
+		Msg("soft-deleting single private data record")
+
+	var updatedID *int64
+	var currentDBVersion *int64
+
+	queryRowErr := p.DB.QueryRowContext(ctx, deletePrivateDataQuery, entry.ClientSideID, deleteRequest.UserID, entry.Version).Scan(&updatedID, &currentDBVersion)
+	if queryRowErr != nil {
+		log.Err(queryRowErr).
+			Str("func", "privateDataRepository.deleteSingleRecord").
+			Str("client_side_id", entry.ClientSideID).
+			Msg("failed to execute soft delete query")
+		return fmt.Errorf("failed to delete private data: %w", queryRowErr)
 	}
 
-	rowsAffected, rowsErr := result.RowsAffected()
-	if rowsErr != nil {
-		log.Err(rowsErr).
-			Str("func", "privateDataRepository.deleteSingleRequest").
-			Int64("user_id", deleteRequest.UserID).
-			Msg("failed to get rows affected")
-		return fmt.Errorf("failed to get rows affected: %w", rowsErr)
+	// not found: target_record empty -> both NULL
+	if currentDBVersion == nil {
+		log.Warn().
+			Str("func", "privateDataRepository.deleteSingleRecord").
+			Str("client_side_id", entry.ClientSideID).
+			Msg("record not found")
+		return ErrPrivateDataNotFound
+	}
+
+	// found but not updated -> version mismatch
+	if updatedID == nil {
+		log.Error().
+			Str("func", "privateDataRepository.deleteSingleRecord").
+			Str("client_side_id", entry.ClientSideID).
+			Int64("db_version", *currentDBVersion).
+			Int64("provided_version", entry.Version).
+			Msg("optimistic lock failed: version mismatch on delete")
+		return ErrVersionConflict
 	}
 
 	log.Info().
-		Str("func", "privateDataRepository.deleteSingleRequest").
-		Int64("user_id", deleteRequest.UserID).
-		Int("ids_count", len(deleteRequest.IDs)).
-		Int64("deleted", rowsAffected).
-		Msg("successfully deleted private data")
+		Str("func", "privateDataRepository.deleteSingleRecord").
+		Str("client_side_id", entry.ClientSideID).
+		Int64("deleted_id", *updatedID).
+		Msg("successfully soft-deleted single private data record")
 
 	return nil
 }
 
-func (p *privateDataRepository) savePrivateData(ctx context.Context, data ...*models.PrivateData) error {
+func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, deleteRequest models.DeleteRequest) error {
+	log := logger.FromContext(ctx)
+
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.DeletePrivateData").
+			Int("entries_count", len(deleteRequest.DeleteEntries)).
+			Msg("failed to begin transaction")
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for idx, entry := range deleteRequest.DeleteEntries {
+		log.Debug().
+			Str("func", "privateDataRepository.DeletePrivateData").
+			Int("iteration", idx+1).
+			Int("total", len(deleteRequest.DeleteEntries)).
+			Str("client_side_id", entry.ClientSideID).
+			Msg("soft-deleting private data in transaction")
+
+		var updatedID *int64
+		var currentDBVersion *int64
+
+		queryRowErr := tx.QueryRowContext(ctx, deletePrivateDataQuery, entry.ClientSideID, deleteRequest.UserID, entry.Version).Scan(&updatedID, &currentDBVersion)
+		if queryRowErr != nil {
+			log.Err(queryRowErr).
+				Str("func", "privateDataRepository.DeletePrivateData").
+				Int("iteration", idx+1).
+				Str("client_side_id", entry.ClientSideID).
+				Msg("failed to execute soft delete query")
+			return fmt.Errorf("failed to delete private data at index %d: %w", idx, queryRowErr)
+		}
+
+		// not found: target_record empty -> both NULL
+		if currentDBVersion == nil {
+			log.Warn().
+				Str("func", "privateDataRepository.DeletePrivateData").
+				Int("iteration", idx+1).
+				Str("client_side_id", entry.ClientSideID).
+				Msg("record not found")
+			return ErrPrivateDataNotFound
+		}
+
+		// found but not updated -> version mismatch
+		if updatedID == nil {
+			log.Error().
+				Str("func", "privateDataRepository.DeletePrivateData").
+				Int("iteration", idx+1).
+				Str("client_side_id", entry.ClientSideID).
+				Int64("db_version", *currentDBVersion).
+				Int64("provided_version", entry.Version).
+				Msg("optimistic lock failed: version mismatch on delete")
+			return fmt.Errorf("failed to delete private data at index %d: %w", idx, ErrVersionConflict)
+		}
+
+		log.Debug().
+			Str("func", "privateDataRepository.DeletePrivateData").
+			Int("iteration", idx+1).
+			Str("client_side_id", entry.ClientSideID).
+			Int64("deleted_id", *updatedID).
+			Msg("soft-deleted record in current iteration")
+	}
+
+	if commitErr := tx.Commit(); commitErr != nil {
+		log.Err(commitErr).
+			Str("func", "privateDataRepository.DeletePrivateData").
+			Int("entries_count", len(deleteRequest.DeleteEntries)).
+			Msg("failed to commit transaction")
+		return fmt.Errorf("failed to commit transaction: %w", commitErr)
+	}
+
+	log.Info().
+		Str("func", "privateDataRepository.DeletePrivateData").
+		Int64("user_id", deleteRequest.UserID).
+		Int("entries_count", len(deleteRequest.DeleteEntries)).
+		Msg("successfully soft-deleted private data")
+
+	return nil
+}
+
+func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*models.PrivateData) error {
 	if len(data) == 1 {
 		return p.saveSinglePrivateData(ctx, data[0])
 	}
@@ -335,7 +427,14 @@ func (p *privateDataRepository) savePrivateData(ctx context.Context, data ...*mo
 func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data *models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
-	result, err := p.DB.ExecContext(ctx, savePrivateData,
+	log.Debug().
+		Str("client_side_id", data.ClientSideID).
+		Int64("user_id", data.UserID).
+		Msg("saving single private data record")
+
+	// Используем QueryRowContext + Scan, чтобы получить созданный ID
+	err := p.DB.QueryRowContext(ctx, savePrivateData,
+		data.ClientSideID,
 		data.UserID,
 		data.Payload.Metadata,
 		data.Payload.Type,
@@ -343,33 +442,20 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 		data.Payload.Notes,
 		data.Payload.AdditionalFields,
 		data.Version,
+		data.Hash,
 		data.CreatedAt,
-	)
+	).Scan(&data.ID)
+
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.saveSinglePrivateData").
-			Int64("id", data.ID).
+			Str("client_side_id", data.ClientSideID).
 			Int64("user_id", data.UserID).
-			Msg("failed to execute query for saving private data")
+			Msg("failed to save private data")
+
+		// Проверка на дубликат (если клиент прислал тот же client_side_id)
+		// Можно добавить проверку на pq.Error с кодом 23505 (unique_violation)
 		return fmt.Errorf("failed to save private data: %w", err)
-	}
-
-	rowsAffected, rowsErr := result.RowsAffected()
-	if rowsErr != nil {
-		log.Err(rowsErr).
-			Str("func", "privateDataRepository.saveSinglePrivateData").
-			Int64("id", data.ID).
-			Msg("failed to get rows affected")
-		return fmt.Errorf("failed to get rows affected: %w", rowsErr)
-	}
-
-	if rowsAffected == 0 {
-		log.Error().
-			Str("func", "privateDataRepository.saveSinglePrivateData").
-			Int64("id", data.ID).
-			Int64("user_id", data.UserID).
-			Msg("private data was not saved (0 rows affected)")
-		return ErrPrivateDataNotSaved
 	}
 
 	return nil
@@ -404,11 +490,12 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			Str("func", "privateDataRepository.saveMultiplePrivateData").
 			Int("iteration", idx+1).
 			Int("total", len(data)).
-			Int64("id", singleData.ID).
+			Str("client_side_id", singleData.ClientSideID).
 			Int64("user_id", singleData.UserID).
 			Msg("saving private data in transaction")
 
-		result, execErr := stmt.ExecContext(ctx,
+		queryErr := stmt.QueryRowContext(ctx,
+			singleData.ClientSideID,
 			singleData.UserID,
 			singleData.Payload.Metadata,
 			singleData.Payload.Type,
@@ -416,36 +503,17 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			singleData.Payload.Notes,
 			singleData.Payload.AdditionalFields,
 			singleData.Version,
+			singleData.Hash,
 			singleData.CreatedAt,
-		)
-		if execErr != nil {
-			log.Err(execErr).
+		).Scan(&singleData.ID)
+
+		if queryErr != nil {
+			log.Err(err).
 				Str("func", "privateDataRepository.saveMultiplePrivateData").
 				Int("iteration", idx+1).
-				Int64("id", singleData.ID).
-				Int64("user_id", singleData.UserID).
+				Str("client_side_id", singleData.ClientSideID).
 				Msg("failed to execute prepared statement")
-			return fmt.Errorf("failed to save private data at index %d: %w", idx, execErr)
-		}
-
-		rowsAffected, rowsErr := result.RowsAffected()
-		if rowsErr != nil {
-			log.Err(rowsErr).
-				Str("func", "privateDataRepository.saveMultiplePrivateData").
-				Int("iteration", idx+1).
-				Int64("id", singleData.ID).
-				Msg("failed to get rows affected")
-			return fmt.Errorf("failed to get rows affected at index %d: %w", idx, rowsErr)
-		}
-
-		if rowsAffected == 0 {
-			log.Error().
-				Str("func", "privateDataRepository.saveMultiplePrivateData").
-				Int("iteration", idx+1).
-				Int64("id", singleData.ID).
-				Int64("user_id", singleData.UserID).
-				Msg("private data was not saved (0 rows affected)")
-			return ErrPrivateDataNotSaved
+			return fmt.Errorf("failed to save private data at index %d: %w", idx, queryErr)
 		}
 	}
 
@@ -468,7 +536,7 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 	if err != nil {
 		log.Err(err).
 			Str("func", "privateDataRepository.updateSingleRecord").
-			Int64("id", update.ID).
+			Str("id", update.ClientSideID).
 			Msg("failed to build update query")
 		return fmt.Errorf("failed to build update query: %w", err)
 	}
@@ -476,7 +544,7 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 	if len(args) == 2 {
 		log.Warn().
 			Str("func", "privateDataRepository.updateSingleRecord").
-			Int64("id", update.ID).
+			Str("id", update.ClientSideID).
 			Msg("no fields to update, skipping")
 		return nil
 	}
@@ -486,36 +554,36 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 
 	queryRowErr := p.DB.QueryRowContext(ctx, query, args...).Scan(&updatedID, &currentDBVersion)
 	if queryRowErr != nil {
-		if errors.Is(queryRowErr, sql.ErrNoRows) {
-			log.Err(queryRowErr).
-				Str("func", "privateDataRepository.updateSingleRecord").
-				Int64("id", update.ID).
-				Msg("no rows updated (record not found or access denied)")
-
-			return ErrPrivateDataNotFound
-		}
-
 		log.Err(queryRowErr).
 			Str("func", "privateDataRepository.updateSingleRecord").
-			Int64("id", update.ID).
+			Str("id", update.ClientSideID).
 			Msg("failed to execute update query")
-		return fmt.Errorf("failed to update private data: %w", err)
+		return fmt.Errorf("failed to update private data: %w", queryRowErr)
 	}
 
-	// 1. if updatedID == nil, update didn't work because of check `version = provided_version - 1`
+	// no cipher record found: `target_record` is empty - both fields are NULL
+	if currentDBVersion == nil {
+		log.Warn().
+			Str("func", "privateDataRepository.updateSingleRecord").
+			Str("id", update.ClientSideID).
+			Msg("record not found")
+		return ErrPrivateDataNotFound
+	}
+
+	// cipher record found, but UPDATE didn't work - version mismatch
 	if updatedID == nil {
 		log.Warn().
-			Int64("id", update.ID).
+			Str("func", "privateDataRepository.updateSingleRecord").
+			Str("id", update.ClientSideID).
 			Int64("db_version", *currentDBVersion).
 			Int64("provided_version", update.Version).
 			Msg("optimistic lock failed: version mismatch")
-
 		return fmt.Errorf("failed to update private data: %w", ErrVersionConflict)
 	}
 
 	log.Info().
 		Str("func", "privateDataRepository.updateSingleRecord").
-		Int64("id", update.ID).
+		Str("id", update.ClientSideID).
 		Msg("successfully updated private data")
 
 	return nil
@@ -541,7 +609,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			log.Err(buildErr).
 				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
-				Int64("id", update.ID).
+				Str("id", update.ClientSideID).
 				Msg("failed to build update query")
 			return fmt.Errorf("failed to build update query at index %d: %w", idx, buildErr)
 		}
@@ -550,48 +618,48 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("iteration", idx+1).
 			Int("total", len(updates)).
-			Int64("id", update.ID).
+			Str("id", update.ClientSideID).
 			Msg("updating private data in transaction")
 
 		var updatedID *int64
 		var currentDBVersion *int64
 
-		queryRowErr := p.DB.QueryRowContext(ctx, query, args...).Scan(&updatedID, &currentDBVersion)
+		queryRowErr := tx.QueryRowContext(ctx, query, args...).Scan(&updatedID, &currentDBVersion)
 		if queryRowErr != nil {
-			if errors.Is(queryRowErr, sql.ErrNoRows) {
-				log.Err(queryRowErr).
-					Str("func", "privateDataRepository.updateMultipleRecords").
-					Int("iteration", idx+1).
-					Int64("id", update.ID).
-					Msg("no rows updated (record not found or access denied)")
-
-				return ErrPrivateDataNotFound
-			}
-
 			log.Err(queryRowErr).
 				Str("func", "privateDataRepository.updateMultipleRecords").
-				Int64("id", update.ID).
+				Str("id", update.ClientSideID).
 				Int("iteration", idx+1).
 				Msg("failed to execute update query")
 			return fmt.Errorf("failed to update private data at index %d: %w", idx, queryRowErr)
 		}
 
-		// 1. if updatedID == nil, update didn't work because of check `version = provided_version - 1`
-		if updatedID == nil {
+		// no cipher record found: `target_record` is empty - both fields are NULL
+		if currentDBVersion == nil {
 			log.Warn().
-				Int64("id", update.ID).
-				Int64("db_version", *currentDBVersion).
+				Str("func", "privateDataRepository.updateMultipleRecords").
 				Int("iteration", idx+1).
+				Str("id", update.ClientSideID).
+				Msg("record not found")
+			return ErrPrivateDataNotFound
+		}
+
+		// cipher record found, but UPDATE didn't work - version mismatch
+		if updatedID == nil {
+			log.Error().
+				Str("func", "privateDataRepository.updateMultipleRecords").
+				Int("iteration", idx+1).
+				Str("id", update.ClientSideID).
+				Int64("db_version", *currentDBVersion).
 				Int64("provided_version", update.Version).
 				Msg("optimistic lock failed: version mismatch")
-
-			return fmt.Errorf("failed to update private data: %w", ErrVersionConflict)
+			return fmt.Errorf("failed to update private data at index %d: %w", idx, ErrVersionConflict)
 		}
 
 		log.Debug().
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("iteration", idx+1).
-			Int64("id", update.ID).
+			Str("id", update.ClientSideID).
 			Msg("updated record in current iteration")
 	}
 

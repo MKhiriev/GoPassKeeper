@@ -4,8 +4,7 @@ package models
 // Used to insert multiple encrypted records in a single operation.
 type UploadRequest struct {
 	// UserID filters records by owner.
-	// Required in most cases to ensure data isolation.
-	UserID int64 `json:"user_id,omitempty"`
+	UserID int64 `json:"user_id"`
 
 	// PrivateDataList contains one or more vault items to be stored.
 	PrivateDataList []*PrivateData `json:"private_data_list"`

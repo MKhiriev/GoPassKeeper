@@ -26,7 +26,7 @@ func NewPrivateDataService(privateDataRepository store.PrivateDataStorage, cfg c
 }
 
 func (p *privateDataService) UploadPrivateData(ctx context.Context, uploadRequest models.UploadRequest) error {
-	return p.privateDataRepository.Save(ctx, uploadRequest.PrivateData...)
+	return p.privateDataRepository.Save(ctx, uploadRequest.PrivateDataList...)
 }
 
 func (p *privateDataService) DownloadPrivateData(ctx context.Context, downloadRequests models.DownloadRequest) ([]models.PrivateData, error) {

@@ -33,6 +33,9 @@ type PrivateData struct {
 	// from other devices.
 	Version int64 `json:"version"`
 
+	// Deleted field tells if record is deleted
+	Deleted bool `json:"deleted"`
+
 	// CreatedAt is the timestamp when the record was created.
 	CreatedAt *time.Time `json:"created_at"`
 

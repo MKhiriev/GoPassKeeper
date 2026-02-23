@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 
 ALTER TABLE ciphers
-    ADD COLUMN IF NOT EXISTS version BIGINT;
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL;
 
 -- +goose StatementEnd
 

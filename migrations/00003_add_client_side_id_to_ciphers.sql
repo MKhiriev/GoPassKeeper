@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 
 ALTER TABLE ciphers
-    ADD COLUMN IF NOT EXISTS client_side_id VARCHAR(40);
+    ADD COLUMN IF NOT EXISTS client_side_id VARCHAR(40) NOT NULL;
 
 ALTER TABLE ciphers
     DROP CONSTRAINT IF EXISTS ciphers_id_user_id_type_key;
