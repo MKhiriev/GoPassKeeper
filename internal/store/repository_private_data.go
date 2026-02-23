@@ -8,11 +8,23 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
+// privateDataRepository is the PostgreSQL-backed implementation of
+// [PrivateDataRepository]. It executes all vault-item CRUD operations
+// directly against the "ciphers" table using the embedded [*DB] connection.
+//
+// Every public method obtains a context-scoped logger via
+// [logger.FromContext] so that all database interactions are traced
+// with structured fields (user_id, client_side_id, iteration index, etc.).
 type privateDataRepository struct {
 	*DB
 	logger *logger.Logger
 }
 
+// NewPrivateDataRepository constructs a [PrivateDataRepository] backed by
+// the provided database connection and logger.
+//
+// The logger parameter is stored for fallback logging; most methods prefer
+// the context-scoped logger obtained via [logger.FromContext].
 func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataRepository {
 	return &privateDataRepository{
 		DB:     db,
@@ -20,6 +32,13 @@ func NewPrivateDataRepository(db *DB, logger *logger.Logger) PrivateDataReposito
 	}
 }
 
+// GetPrivateData retrieves vault items that match the criteria in downloadRequest.
+//
+// Filtering is always applied by UserID. When downloadRequest.ClientSideIDs is
+// non-empty, an additional IN-clause narrows the result to those identifiers only.
+//
+// Returns the matched items or an error if the query fails, a row cannot be
+// scanned, or an iteration error is detected after the result set is exhausted.
 func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequest models.DownloadRequest) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
@@ -85,8 +104,10 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 	return results, nil
 }
 
-// GetAllPrivateData retrieves all vault items for a specific user.
-// Returns an empty slice if no records found.
+// GetAllPrivateData retrieves every vault item owned by the given user,
+// including soft-deleted records.
+//
+// Returns an empty slice when no records are found.
 func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
@@ -142,7 +163,13 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 	return allData, nil
 }
 
-// checked!
+// GetAllStates returns lightweight [models.PrivateDataState] descriptors for
+// every vault item owned by the given user.
+//
+// The result contains only identity and change-detection fields
+// (ClientSideID, Hash, Version, Deleted, UpdatedAt) — no encrypted payloads.
+// This is the primary method used at the start of a sync cycle when the
+// client needs a full picture of the server-side state.
 func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
 	log := logger.FromContext(ctx)
 
@@ -190,6 +217,12 @@ func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) 
 	return dataStates, nil
 }
 
+// GetStates returns lightweight [models.PrivateDataState] descriptors for
+// vault items whose ClientSideIDs are listed in syncRequest.
+//
+// This method is used during incremental synchronization: the client sends
+// the IDs it knows about, and the server responds with the current state of
+// each, allowing the client to decide what to fetch, push, or delete locally.
 func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest models.SyncRequest) ([]models.PrivateDataState, error) {
 	log := logger.FromContext(ctx)
 
@@ -248,6 +281,16 @@ func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest model
 	return allData, nil
 }
 
+// UpdatePrivateData applies a batch of partial updates described in updateRequest.
+//
+// Routing strategy:
+//   - Zero updates → no-op (returns nil with a warning log).
+//   - Exactly one update → delegates to [updateSingleRecord] (no transaction overhead).
+//   - Two or more updates → delegates to [updateMultipleRecords] (wrapped in a transaction).
+//
+// Each individual update uses optimistic locking: the provided Version must
+// match the current database version, otherwise [ErrVersionConflict] is returned.
+// If the target record does not exist, [ErrPrivateDataNotFound] is returned.
 func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateRequest models.UpdateRequest) error {
 	log := logger.FromContext(ctx)
 
@@ -265,6 +308,18 @@ func (p *privateDataRepository) UpdatePrivateData(ctx context.Context, updateReq
 	return p.updateMultipleRecords(ctx, updateRequest.PrivateDataUpdates)
 }
 
+// DeletePrivateData performs a soft-delete of one or more vault items
+// described in deleteRequest.
+//
+// Routing strategy mirrors [UpdatePrivateData]:
+//   - Zero entries → no-op.
+//   - One entry → [deleteSingleRecord] (no transaction).
+//   - Two or more → [deleteMultipleRecords] (transaction).
+//
+// Soft-delete sets the "deleted" flag to true and bumps the version,
+// preserving the record so that clients can detect the deletion during sync.
+// Optimistic locking is enforced: [ErrVersionConflict] on mismatch,
+// [ErrPrivateDataNotFound] if the record does not exist.
 func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteRequest models.DeleteRequest) error {
 	log := logger.FromContext(ctx)
 
@@ -282,6 +337,13 @@ func (p *privateDataRepository) DeletePrivateData(ctx context.Context, deleteReq
 	return p.deleteMultipleRecords(ctx, deleteRequest)
 }
 
+// deleteSingleRecord soft-deletes a single vault item without opening
+// a database transaction.
+//
+// It executes the CTE-based delete query ([deletePrivateDataQuery]) that
+// returns both the updated row ID and the current database version,
+// enabling the caller to distinguish between "not found" (both NULL)
+// and "version conflict" (updatedID NULL, currentDBVersion non-NULL).
 func (p *privateDataRepository) deleteSingleRecord(ctx context.Context, deleteRequest models.DeleteRequest) error {
 	log := logger.FromContext(ctx)
 
@@ -334,6 +396,13 @@ func (p *privateDataRepository) deleteSingleRecord(ctx context.Context, deleteRe
 	return nil
 }
 
+// deleteMultipleRecords soft-deletes two or more vault items inside a single
+// database transaction.
+//
+// The transaction is rolled back automatically (via defer) if any individual
+// delete fails — either because the record is not found, a version conflict
+// is detected, or the query itself errors. The commit is attempted only after
+// all entries have been processed successfully.
 func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, deleteRequest models.DeleteRequest) error {
 	log := logger.FromContext(ctx)
 
@@ -415,6 +484,14 @@ func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, delet
 	return nil
 }
 
+// SavePrivateData persists one or more new vault items.
+//
+// Routing strategy:
+//   - Exactly one item → [saveSinglePrivateData] (plain INSERT, no transaction).
+//   - Two or more items → [saveMultiplePrivateData] (transaction with a prepared statement).
+//
+// On success each [models.PrivateData.ID] is populated with the server-assigned
+// primary key returned by the INSERT … RETURNING id clause.
 func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*models.PrivateData) error {
 	if len(data) == 1 {
 		return p.saveSinglePrivateData(ctx, data[0])
@@ -423,7 +500,11 @@ func (p *privateDataRepository) SavePrivateData(ctx context.Context, data ...*mo
 	return p.saveMultiplePrivateData(ctx, data)
 }
 
-// saveSinglePrivateData saves one private data point
+// saveSinglePrivateData inserts a single vault item without opening a
+// transaction.
+//
+// The generated database ID is written back into data.ID via the
+// INSERT … RETURNING id clause.
 func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data *models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
@@ -432,7 +513,6 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 		Int64("user_id", data.UserID).
 		Msg("saving single private data record")
 
-	// Используем QueryRowContext + Scan, чтобы получить созданный ID
 	err := p.DB.QueryRowContext(ctx, savePrivateData,
 		data.ClientSideID,
 		data.UserID,
@@ -453,15 +533,21 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 			Int64("user_id", data.UserID).
 			Msg("failed to save private data")
 
-		// Проверка на дубликат (если клиент прислал тот же client_side_id)
-		// Можно добавить проверку на pq.Error с кодом 23505 (unique_violation)
 		return fmt.Errorf("failed to save private data: %w", err)
 	}
 
 	return nil
 }
 
-// saveMultiplePrivateData saves one private data point using transaction and prepared statement
+// saveMultiplePrivateData inserts two or more vault items inside a single
+// database transaction using a prepared statement for efficiency.
+//
+// The prepared statement is created once from [savePrivateData] and reused
+// for every item. Each generated database ID is written back into the
+// corresponding [models.PrivateData.ID] field.
+//
+// The transaction is rolled back automatically (via defer) if any individual
+// insert fails; the commit is attempted only after all items succeed.
 func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, data []*models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
@@ -528,7 +614,18 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 	return nil
 }
 
-// updateSingleRecord updates singe record without transaction
+// updateSingleRecord applies a partial update to a single vault item
+// without opening a database transaction.
+//
+// The method builds a dynamic UPDATE query via [buildUpdateQuery], executes
+// it, and inspects the CTE result to determine the outcome:
+//   - Both updatedID and currentDBVersion are non-NULL → success.
+//   - currentDBVersion is NULL → record not found ([ErrPrivateDataNotFound]).
+//   - updatedID is NULL but currentDBVersion is non-NULL → version mismatch ([ErrVersionConflict]).
+//
+// If the built query contains only the two mandatory positional args
+// (client_side_id, user_id) and no SET clauses beyond the default
+// (updated_at, version bump), the method returns nil immediately as a no-op.
 func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update models.PrivateDataUpdate) error {
 	log := logger.FromContext(ctx)
 
@@ -589,7 +686,15 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 	return nil
 }
 
-// updateMultipleRecords updates multiple records with transaction
+// updateMultipleRecords applies partial updates to two or more vault items
+// inside a single database transaction.
+//
+// Each update is built dynamically via [buildUpdateQuery] and executed
+// within the transaction. The CTE result is inspected identically to
+// [updateSingleRecord] (not found vs. version conflict).
+//
+// The transaction is rolled back automatically (via defer) if any individual
+// update fails; the commit is attempted only after all updates succeed.
 func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updates []models.PrivateDataUpdate) error {
 	log := logger.FromContext(ctx)
 
