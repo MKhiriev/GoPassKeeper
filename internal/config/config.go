@@ -125,12 +125,29 @@ type Files struct {
 // Adapter holds configuration for external adapter integrations.
 // The struct is currently empty and is reserved for future third-party
 // service configuration (e.g. object storage, message brokers).
-type Adapter struct{}
+type Adapter struct {
+	// HTTPAddress is the TCP address on which the HTTP server listens,
+	// in "host:port" format (e.g. "0.0.0.0:8080").
+	// Env: ADAPTER__ADDRESS
+	HTTPAddress string `env:"ADDRESS"`
+
+	// GRPCAddress is the TCP address on which the gRPC server listens,
+	// in "host:port" format (e.g. "0.0.0.0:9090").
+	// Env: ADAPTER__GRPC_ADDRESS
+	GRPCAddress string `env:"GRPC_ADDRESS"`
+
+	// RequestTimeout is the maximum duration allowed for a single inbound
+	// request before the server cancels it (e.g. "30s", "1m").
+	// Env: ADAPTER_REQUEST_TIMEOUT
+	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT"`
+}
 
 // Workers holds configuration for background worker processes.
 // The struct is currently empty and is reserved for future worker
 // configuration (e.g. concurrency limits, queue sizes).
-type Workers struct{}
+type Workers struct {
+	SyncInterval time.Duration `env:"SYNC_INTERVAL"`
+}
 
 // GetStructuredConfig loads, merges, and validates the application
 // configuration from all available sources in the following priority order

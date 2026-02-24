@@ -44,10 +44,13 @@ type StructuredJSONConfig struct {
 	} `json:"server,omitempty"`
 
 	// Adapter is reserved for future external adapter configuration.
-	Adapter struct{} `json:"adapter,omitempty"`
+	Adapter struct {
+	} `json:"adapter,omitempty"`
 
 	// Workers is reserved for future background worker configuration.
-	Workers struct{} `json:"workers,omitempty"`
+	Workers struct {
+		SyncInterval Duration `json:"sync_interval"`
+	} `json:"workers,omitempty"`
 }
 
 // parseJSON opens the JSON file at jsonFilePath, decodes it into a
