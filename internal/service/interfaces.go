@@ -66,6 +66,29 @@ type PrivateDataService interface {
 	DeletePrivateData(ctx context.Context, deleteRequests models.DeleteRequest) error
 }
 
+// SyncService defines the contract for computing a client-server synchronisation plan.
+//
+// It operates purely on lightweight state descriptors (PrivateDataState) rather
+// than full vault payloads, so no decryption is required at this stage.
+// The resulting SyncPlan tells the caller exactly which items to download,
+// upload, update, or delete on each side.
+type SyncService interface {
+	// BuildSyncPlan compares serverData (states fetched from the server) against
+	// clientData (states read from the local database) and returns a SyncPlan
+	// that classifies every item into one of five mutually exclusive action
+	// categories:
+	//
+	//   Download     — fetch from server (new or newer version)
+	//   Upload       — push to server   (exists only on client, never synced)
+	//   Update       — write to server  (client version is ahead or hash diverged)
+	//   DeleteClient — remove locally  (server holds a newer soft-deleted version)
+	//   DeleteServer — remove remotely (client holds a newer soft-deleted version)
+	//
+	// Items that are identical on both sides produce no entry in the plan.
+	// ctx is forwarded to allow cancellation of any I/O performed internally.
+	BuildSyncPlan(ctx context.Context, serverData, clientData []models.PrivateDataState) (models.SyncPlan, error)
+}
+
 // AuthService defines the contract for user authentication and JWT token management.
 //
 // It covers the full authentication lifecycle: account creation, credential
