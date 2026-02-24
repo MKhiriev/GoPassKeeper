@@ -32,3 +32,33 @@ type PrivateDataState struct {
 	// resolution heuristics (e.g. last-write-wins).
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
+
+// SyncPlan is the result of comparing server and client PrivateDataState slices.
+// Each field contains items that require a specific sync operation.
+// All fields are nil by default — a nil slice means no action needed for that category.
+type SyncPlan struct {
+	// Download contains items that must be fetched from the server to the client.
+	// Covers two sub-cases:
+	//   - new records that exist only on the server;
+	//   - existing records where the server version is ahead of the client.
+	Download []PrivateDataState
+
+	// Upload contains new items that exist only on the client
+	// and have never been pushed to the server.
+	Upload []PrivateDataState
+
+	// Update contains items where the client holds a newer or diverged version
+	// that must be written back to the server.
+	// Covers two sub-cases:
+	//   - same version but hash mismatch (local edit not yet pushed);
+	//   - client version is ahead of the server (offline edits).
+	Update []PrivateDataState
+
+	// DeleteClient contains items that must be removed from the client.
+	// The server holds a newer version that is soft-deleted (Deleted == true).
+	DeleteClient []PrivateDataState
+
+	// DeleteServer contains items that must be removed from the server.
+	// The client holds a newer or equal version that is soft-deleted (Deleted == true).
+	DeleteServer []PrivateDataState
+}
