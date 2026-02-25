@@ -1,5 +1,7 @@
 package crypto
 
+//go:generate mockgen -source=interfaces.go -destination=../mock/keychain_service_mock.go -package=mock
+
 // KeyChainService отвечает за всю клиентскую криптографию в схеме Zero-Knowledge.
 // Он не знает ничего о сети, базе данных или пользователях.
 // Его единственная задача — генерировать и защищать ключи.
