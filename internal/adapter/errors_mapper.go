@@ -29,7 +29,7 @@ func mapHTTPError(resp *resty.Response) error {
 	case http.StatusBadGateway:
 		return fmt.Errorf("%w: %s", ErrBadGateway, body)
 	case http.StatusInternalServerError:
-		return fmt.Errorf("%w: %s", ErrInternalError, body)
+		return fmt.Errorf("%w: %s", ErrInternalServerError, body)
 	default:
 		if body == "" {
 			body = http.StatusText(resp.StatusCode())
