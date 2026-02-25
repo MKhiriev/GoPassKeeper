@@ -72,8 +72,6 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 		return models.User{}, ErrInvalidDataProvided
 	}
 
-	a.hashPassword(&user)
-
 	registeredUser, err := a.userRepository.CreateUser(ctx, user)
 	if err != nil {
 		log.Err(err).Any("user", user).Msg("user creation ended with error")
