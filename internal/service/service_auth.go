@@ -90,7 +90,7 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 // Returns the authenticated user record or:
 //   - ErrInvalidDataProvided if Login or MasterPassword is empty.
 //   - A wrapped storage error if the repository lookup fails (e.g. user not
-//     found — see store.ErrUserNotFound).
+//     found — see store.ErrNoUserWasFound).
 //   - ErrWrongPassword if the hashed passwords do not match.
 func (a *authService) Login(ctx context.Context, user models.User) (models.User, error) {
 	log := logger.FromContext(ctx)

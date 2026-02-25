@@ -21,9 +21,8 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 
 	err := h.services.PrivateDataService.UploadPrivateData(r.Context(), uploadRequest)
 	if err != nil {
-		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.upload").Msg("error uploading private data")
-		http.Error(w, "error uploading private data", http.StatusInternalServerError)
+		http.Error(w, "error uploading private data", statusFromError(err))
 		return
 	}
 
@@ -42,9 +41,8 @@ func (h *Handler) downloadMultiple(w http.ResponseWriter, r *http.Request) {
 
 	requestedData, err := h.services.PrivateDataService.DownloadPrivateData(r.Context(), dataArrayFromBody)
 	if err != nil {
-		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.downloadMultiple").Msg("error downloading private data")
-		http.Error(w, "error downloading private data", http.StatusInternalServerError)
+		http.Error(w, "error downloading private data", statusFromError(err))
 		return
 	}
 
@@ -64,9 +62,8 @@ func (h *Handler) downloadAllUserData(w http.ResponseWriter, r *http.Request) {
 
 	requestedData, err := h.services.PrivateDataService.DownloadAllPrivateData(ctx, userID)
 	if err != nil {
-		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.downloadAllUserData").Msg("error downloading all private user data")
-		http.Error(w, "error downloading private data", http.StatusInternalServerError)
+		http.Error(w, "error downloading private data", statusFromError(err))
 		return
 	}
 
@@ -85,9 +82,8 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.services.PrivateDataService.UpdatePrivateData(r.Context(), dataArrayFromBody)
 	if err != nil {
-		// todo add error classification later
 		log.Err(err).Str("func", "*Handler.update").Msg("error updating private data")
-		http.Error(w, "error updating private data", http.StatusInternalServerError)
+		http.Error(w, "error updating private data", statusFromError(err))
 		return
 	}
 

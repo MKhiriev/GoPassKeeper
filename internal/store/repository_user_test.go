@@ -157,7 +157,7 @@ func TestFindUserByLogin_NotFound(t *testing.T) {
 		WillReturnError(pgError(pgerrcode.NoDataFound))
 
 	_, err := repo.FindUserByLogin(ctx, user)
-	if !errors.Is(err, ErrUserNotFound) {
+	if !errors.Is(err, ErrNoUserWasFound) {
 		t.Fatalf("expected ErrUserNotFound, got %v", err)
 	}
 }

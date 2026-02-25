@@ -58,7 +58,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 			Int64("user_id", downloadRequest.UserID).
 			Int("client side ids count", len(downloadRequest.ClientSideIDs)).
 			Msg("failed to execute query for getting requested private data")
-		return nil, fmt.Errorf("failed to query requested private data: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrExecutingQuery, err)
 	}
 	defer rows.Close()
 
@@ -87,7 +87,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 				Str("func", "privateDataRepository.GetPrivateData").
 				Int64("user_id", downloadRequest.UserID).
 				Msg("failed to scan private data row")
-			return nil, fmt.Errorf("failed to scan private data row: %w", scanErr)
+			return nil, fmt.Errorf("%w: %w", ErrScanningRow, scanErr)
 		}
 
 		results = append(results, item)
@@ -98,7 +98,7 @@ func (p *privateDataRepository) GetPrivateData(ctx context.Context, downloadRequ
 			Str("func", "privateDataRepository.GetPrivateData").
 			Int64("user_id", downloadRequest.UserID).
 			Msg("error occurred during rows iteration")
-		return nil, fmt.Errorf("error iterating private data rows: %w", rowsErr)
+		return nil, fmt.Errorf("%w: %w", ErrScanningRows, rowsErr)
 	}
 
 	return results, nil
@@ -117,7 +117,7 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 			Str("func", "privateDataRepository.GetAllPrivateData").
 			Int64("user_id", userID).
 			Msg("failed to execute query for getting all user private data")
-		return nil, fmt.Errorf("failed to query user private data: %w", queryErr)
+		return nil, fmt.Errorf("%w: %w", ErrExecutingQuery, queryErr)
 	}
 	defer rows.Close()
 
@@ -146,7 +146,7 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 				Str("func", "privateDataRepository.GetAllPrivateData").
 				Int64("user_id", userID).
 				Msg("failed to scan cipher row")
-			return nil, fmt.Errorf("failed to scan cipher row: %w", scanErr)
+			return nil, fmt.Errorf("%w: %w", ErrScanningRow, scanErr)
 		}
 
 		allData = append(allData, data)
@@ -157,7 +157,7 @@ func (p *privateDataRepository) GetAllPrivateData(ctx context.Context, userID in
 			Str("func", "privateDataRepository.GetAllPrivateData").
 			Int64("user_id", userID).
 			Msg("error occurred during rows iteration")
-		return nil, fmt.Errorf("error iterating cipher rows: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrScanningRows, err)
 	}
 
 	return allData, nil
@@ -179,7 +179,7 @@ func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) 
 			Str("func", "privateDataRepository.GetAllStates").
 			Int64("user_id", userID).
 			Msg("failed to execute query for getting all user private data")
-		return nil, fmt.Errorf("failed to query user private data states: %w", queryErr)
+		return nil, fmt.Errorf("%w: %w", ErrExecutingQuery, queryErr)
 	}
 	defer rows.Close()
 
@@ -200,7 +200,7 @@ func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) 
 				Str("func", "privateDataRepository.GetAllStates").
 				Int64("user_id", userID).
 				Msg("failed to scan cipher row")
-			return nil, fmt.Errorf("failed to scan cipher row: %w", scanErr)
+			return nil, fmt.Errorf("%w: %w", ErrScanningRow, scanErr)
 		}
 
 		dataStates = append(dataStates, data)
@@ -211,7 +211,7 @@ func (p *privateDataRepository) GetAllStates(ctx context.Context, userID int64) 
 			Str("func", "privateDataRepository.GetAllStates").
 			Int64("user_id", userID).
 			Msg("error occurred during rows iteration")
-		return nil, fmt.Errorf("error iterating cipher rows: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrScanningRows, err)
 	}
 
 	return dataStates, nil
@@ -243,7 +243,7 @@ func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest model
 			Str("func", "privateDataRepository.GetStates").
 			Int64("user_id", userID).
 			Msg("failed to execute query for getting all user private data")
-		return nil, fmt.Errorf("failed to query user private data: %w", queryErr)
+		return nil, fmt.Errorf("%w: %w", ErrExecutingQuery, queryErr)
 	}
 	defer rows.Close()
 
@@ -264,18 +264,18 @@ func (p *privateDataRepository) GetStates(ctx context.Context, syncRequest model
 				Str("func", "privateDataRepository.GetStates").
 				Int64("user_id", userID).
 				Msg("failed to scan cipher row")
-			return nil, fmt.Errorf("failed to scan cipher row: %w", scanErr)
+			return nil, fmt.Errorf("%w: %w", ErrScanningRow, scanErr)
 		}
 
 		allData = append(allData, data)
 	}
 
-	if err := rows.Err(); err != nil {
-		log.Err(err).
+	if rowsErr := rows.Err(); rowsErr != nil {
+		log.Err(rowsErr).
 			Str("func", "privateDataRepository.GetStates").
 			Int64("user_id", userID).
 			Msg("error occurred during rows iteration")
-		return nil, fmt.Errorf("error iterating cipher rows: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrScanningRows, rowsErr)
 	}
 
 	return allData, nil
@@ -364,7 +364,7 @@ func (p *privateDataRepository) deleteSingleRecord(ctx context.Context, deleteRe
 			Str("func", "privateDataRepository.deleteSingleRecord").
 			Str("client_side_id", entry.ClientSideID).
 			Msg("failed to execute soft delete query")
-		return fmt.Errorf("failed to delete private data: %w", queryRowErr)
+		return fmt.Errorf("%w: %w", ErrExecutingQuery, queryRowErr)
 	}
 
 	// not found: target_record empty -> both NULL
@@ -412,7 +412,7 @@ func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, delet
 			Str("func", "privateDataRepository.DeletePrivateData").
 			Int("entries_count", len(deleteRequest.DeleteEntries)).
 			Msg("failed to begin transaction")
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrBeginningTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -434,7 +434,7 @@ func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, delet
 				Int("iteration", idx+1).
 				Str("client_side_id", entry.ClientSideID).
 				Msg("failed to execute soft delete query")
-			return fmt.Errorf("failed to delete private data at index %d: %w", idx, queryRowErr)
+			return fmt.Errorf("%w: %w", ErrExecutingQuery, queryRowErr)
 		}
 
 		// not found: target_record empty -> both NULL
@@ -472,7 +472,7 @@ func (p *privateDataRepository) deleteMultipleRecords(ctx context.Context, delet
 			Str("func", "privateDataRepository.DeletePrivateData").
 			Int("entries_count", len(deleteRequest.DeleteEntries)).
 			Msg("failed to commit transaction")
-		return fmt.Errorf("failed to commit transaction: %w", commitErr)
+		return fmt.Errorf("%w: %w", ErrCommitingTransaction, commitErr)
 	}
 
 	log.Info().
@@ -533,7 +533,7 @@ func (p *privateDataRepository) saveSinglePrivateData(ctx context.Context, data 
 			Int64("user_id", data.UserID).
 			Msg("failed to save private data")
 
-		return fmt.Errorf("failed to save private data: %w", err)
+		return fmt.Errorf("%w: %w", ErrExecutingQuery, err)
 	}
 
 	return nil
@@ -557,7 +557,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			Str("func", "privateDataRepository.saveMultiplePrivateData").
 			Int("count", len(data)).
 			Msg("failed to begin transaction")
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrBeginningTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -567,7 +567,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			Str("func", "privateDataRepository.saveMultiplePrivateData").
 			Int("count", len(data)).
 			Msg("failed to prepare statement")
-		return fmt.Errorf("failed to prepare statement: %w", err)
+		return fmt.Errorf("%w: %w", ErrPreparingStatement, err)
 	}
 	defer stmt.Close()
 
@@ -599,7 +599,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 				Int("iteration", idx+1).
 				Str("client_side_id", singleData.ClientSideID).
 				Msg("failed to execute prepared statement")
-			return fmt.Errorf("failed to save private data at index %d: %w", idx, queryErr)
+			return fmt.Errorf("%w: %w", ErrExecutingStatement, err)
 		}
 	}
 
@@ -608,7 +608,7 @@ func (p *privateDataRepository) saveMultiplePrivateData(ctx context.Context, dat
 			Str("func", "privateDataRepository.saveMultiplePrivateData").
 			Int("count", len(data)).
 			Msg("failed to commit transaction")
-		return fmt.Errorf("failed to commit transaction: %w", commitErr)
+		return fmt.Errorf("%w: %w", ErrCommitingTransaction, commitErr)
 	}
 
 	return nil
@@ -635,7 +635,7 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Str("id", update.ClientSideID).
 			Msg("failed to build update query")
-		return fmt.Errorf("failed to build update query: %w", err)
+		return err
 	}
 
 	if len(args) == 2 {
@@ -655,7 +655,7 @@ func (p *privateDataRepository) updateSingleRecord(ctx context.Context, update m
 			Str("func", "privateDataRepository.updateSingleRecord").
 			Str("id", update.ClientSideID).
 			Msg("failed to execute update query")
-		return fmt.Errorf("failed to update private data: %w", queryRowErr)
+		return fmt.Errorf("%w: %w", ErrExecutingQuery, queryRowErr)
 	}
 
 	// no cipher record found: `target_record` is empty - both fields are NULL
@@ -704,7 +704,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("updates_count", len(updates)).
 			Msg("failed to begin transaction")
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("%w: %w", ErrBeginningTransaction, err)
 	}
 	defer tx.Rollback()
 
@@ -716,7 +716,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Int("iteration", idx+1).
 				Str("id", update.ClientSideID).
 				Msg("failed to build update query")
-			return fmt.Errorf("failed to build update query at index %d: %w", idx, buildErr)
+			return err
 		}
 
 		log.Debug().
@@ -736,7 +736,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 				Str("id", update.ClientSideID).
 				Int("iteration", idx+1).
 				Msg("failed to execute update query")
-			return fmt.Errorf("failed to update private data at index %d: %w", idx, queryRowErr)
+			return fmt.Errorf("%w: %w", ErrExecutingQuery, queryRowErr)
 		}
 
 		// no cipher record found: `target_record` is empty - both fields are NULL
@@ -773,7 +773,7 @@ func (p *privateDataRepository) updateMultipleRecords(ctx context.Context, updat
 			Str("func", "privateDataRepository.updateMultipleRecords").
 			Int("updates_count", len(updates)).
 			Msg("failed to commit transaction")
-		return fmt.Errorf("failed to commit transaction: %w", commitErr)
+		return fmt.Errorf("%w: %w", ErrCommitingTransaction, commitErr)
 	}
 
 	log.Info().

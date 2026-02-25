@@ -13,10 +13,6 @@ var (
 	// user record produces an empty result set.
 	ErrNoUserWasFound = errors.New("no user was found")
 
-	// ErrUserNotFound is returned when a lookup for a specific user
-	// (e.g. by ID or login) yields no matching record.
-	ErrUserNotFound = errors.New("user not found")
-
 	// ErrPrivateDataNotSaved is returned when an INSERT of one or more vault
 	// items completes without error but the number of affected rows is zero,
 	// indicating that no data was actually persisted.
@@ -32,4 +28,15 @@ var (
 	// stored in the database, meaning another device has modified the record
 	// since the client last synchronized.
 	ErrVersionConflict = errors.New("private data version conflict occurred")
+)
+
+var (
+	ErrBuildingSQLQuery     = errors.New("error building sql query")
+	ErrExecutingQuery       = errors.New("error executing sql query")
+	ErrBeginningTransaction = errors.New("failed to begin transaction")
+	ErrCommitingTransaction = errors.New("failed to commit transaction")
+	ErrPreparingStatement   = errors.New("failed to prepare statement")
+	ErrExecutingStatement   = errors.New("failed to executing statement")
+	ErrScanningRow          = errors.New("failed to scan private data row")
+	ErrScanningRows         = errors.New("failed to scan private data rows")
 )

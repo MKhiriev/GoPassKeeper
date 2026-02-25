@@ -116,7 +116,7 @@ type UserRepository interface {
 
 	// FindUserByLogin retrieves a user record matching the Login field
 	// of the provided user model.
-	// Returns [ErrUserNotFound] if no matching record exists.
+	// Returns [ErrNoUserWasFound] if no matching record exists.
 	FindUserByLogin(ctx context.Context, user models.User) (models.User, error)
 }
 

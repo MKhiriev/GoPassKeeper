@@ -105,7 +105,7 @@ func buildSelectAllUserDataQuery(ctx context.Context, userID int64) (string, []a
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, fmt.Errorf("error building query for getting all user data: %w", err)
+		return "", nil, fmt.Errorf("%w: %w", ErrBuildingSQLQuery, err)
 	}
 
 	logger.FromContext(ctx).Debug().Str("query", query).Any("args", args).Msg("built select query")
@@ -140,7 +140,7 @@ func buildGetPrivateDataQuery(ctx context.Context, req models.DownloadRequest) (
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, fmt.Errorf("error building query for getting private data with filters: %w", err)
+		return "", nil, fmt.Errorf("%w: %w", ErrBuildingSQLQuery, err)
 	}
 
 	logger.FromContext(ctx).Debug().Str("query", query).Any("args", args).Msg("built get private data query")
@@ -166,7 +166,7 @@ func buildGetStatesSyncQuery(ctx context.Context, syncRequest models.SyncRequest
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, fmt.Errorf("error building query for getting private data states with filters: %w", err)
+		return "", nil, fmt.Errorf("%w: %w", ErrBuildingSQLQuery, err)
 	}
 
 	logger.FromContext(ctx).
@@ -264,7 +264,7 @@ func buildCreateUserQuery(ctx context.Context, user models.User) (string, []any,
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, fmt.Errorf("error building create user query: %w", err)
+		return "", nil, fmt.Errorf("%w: %w", ErrBuildingSQLQuery, err)
 	}
 
 	logger.FromContext(ctx).Debug().Str("query", query).Any("args", args).Msg("built create user query")
@@ -279,7 +279,7 @@ func buildFindUserByLoginQuery(ctx context.Context, login string) (string, []any
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return "", nil, fmt.Errorf("error building find user by login query: %w", err)
+		return "", nil, fmt.Errorf("%w: %w", ErrBuildingSQLQuery, err)
 	}
 
 	logger.FromContext(ctx).Debug().Str("query", query).Any("args", args).Msg("built find user by login query")

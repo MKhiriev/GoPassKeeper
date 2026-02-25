@@ -76,7 +76,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user models.User) (mode
 // persisted fields into a fresh [models.User] instance.
 //
 // Error handling:
-//   - PostgreSQL no_data_found (P0002) → [ErrUserNotFound].
+//   - PostgreSQL no_data_found (P0002) → [ErrNoUserWasFound].
 //   - Any other driver-level error → wrapped as "unexpected DB error".
 //   - Scan failure (including [sql.ErrNoRows]) → returned directly.
 func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) (models.User, error) {
@@ -90,7 +90,7 @@ func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) 
 		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: row is nil")
 		switch postgresError(err) {
 		case pgerrcode.NoDataFound:
-			return models.User{}, ErrUserNotFound
+			return models.User{}, ErrNoUserWasFound
 		default:
 			return models.User{}, fmt.Errorf("unexpected DB error: %w", err)
 		}
