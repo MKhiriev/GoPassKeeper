@@ -22,9 +22,8 @@ func (h *Handler) getClientServerDiff(w http.ResponseWriter, r *http.Request) {
 
 	privateDataStates, err := h.services.PrivateDataService.DownloadUserPrivateDataStates(ctx, userID)
 	if err != nil {
-		// todo add error classification later
 		log.Error().Str("func", "*Handler.getClientServerDiff").Msg("error getting user private data states")
-		http.Error(w, "error getting user private data states", http.StatusBadRequest)
+		http.Error(w, "error getting user private data states", statusFromError(err))
 		return
 	}
 
@@ -49,9 +48,8 @@ func (h *Handler) syncSpecificUserData(w http.ResponseWriter, r *http.Request) {
 
 	privateDataStates, err := h.services.PrivateDataService.DownloadSpecificUserPrivateDataStates(ctx, syncRequest)
 	if err != nil {
-		// todo add error classification later
 		log.Error().Str("func", "*Handler.getClientServerDiff").Msg("error getting specific user private data states")
-		http.Error(w, "error getting specific user private data states", http.StatusInternalServerError)
+		http.Error(w, "error getting specific user private data states", statusFromError(err))
 		return
 	}
 
