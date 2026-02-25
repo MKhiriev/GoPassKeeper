@@ -67,7 +67,7 @@ func (v *privateDataValidationService) UploadPrivateData(ctx context.Context, up
 		}
 
 		if err := v.validator.Validate(ctx, data); err != nil {
-			return fmt.Errorf("error during private data validation before saving: %w", err)
+			return fmt.Errorf("%w: %w", ErrInvalidDataProvided, err)
 		}
 	}
 
@@ -93,7 +93,7 @@ func (v *privateDataValidationService) DownloadPrivateData(ctx context.Context, 
 	}
 
 	if err := v.validator.Validate(ctx, downloadRequests); err != nil {
-		return nil, fmt.Errorf("error during download request validation before downloading: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidDataProvided, err)
 	}
 
 	return v.inner.DownloadPrivateData(ctx, downloadRequests)
@@ -167,7 +167,7 @@ func (v *privateDataValidationService) DownloadSpecificUserPrivateDataStates(ctx
 
 	for _, request := range syncRequest.ClientSideIDs {
 		if request == "" {
-			return nil, ErrValidationEmptyClientIDProvidedForSyncRequests
+			return nil, ErrInvalidDataProvided
 		}
 	}
 
@@ -199,7 +199,7 @@ func (v *privateDataValidationService) UpdatePrivateData(ctx context.Context, up
 
 	for _, dataUpdate := range updateRequests.PrivateDataUpdates {
 		if err := v.validator.Validate(ctx, dataUpdate); err != nil {
-			return fmt.Errorf("error during update request validation before updating: %w", err)
+			return fmt.Errorf("%w: %w", ErrInvalidDataProvided, err)
 		}
 	}
 
@@ -225,7 +225,7 @@ func (v *privateDataValidationService) DeletePrivateData(ctx context.Context, de
 	}
 
 	if err := v.validator.Validate(ctx, deleteRequests); err != nil {
-		return fmt.Errorf("error during delete request validation before deleting: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidDataProvided, err)
 	}
 
 	return v.inner.DeletePrivateData(ctx, deleteRequests)
