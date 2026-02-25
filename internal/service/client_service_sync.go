@@ -151,7 +151,7 @@ func (s *clientSyncService) updateServerData(ctx context.Context, clientSideID s
 	if err == nil {
 		return nil
 	}
-	if !errors.Is(err, adapter.ErrVersionConflict) {
+	if !errors.Is(err, adapter.ErrConflict) {
 		return fmt.Errorf("update server item %s: %w", clientSideID, err)
 	}
 
@@ -181,7 +181,7 @@ func (s *clientSyncService) deleteFromServer(ctx context.Context, clientSideID s
 	if err == nil {
 		return nil
 	}
-	if !errors.Is(err, adapter.ErrVersionConflict) {
+	if !errors.Is(err, adapter.ErrConflict) {
 		return fmt.Errorf("delete server item %s: %w", clientSideID, err)
 	}
 

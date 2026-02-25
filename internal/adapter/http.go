@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -235,26 +234,6 @@ func (h *httpServerAdapter) authedRequest(ctx context.Context) *resty.Request {
 		req.SetHeader("Authorization", "Bearer "+token)
 	}
 	return req
-}
-
-func mapHTTPError(resp *resty.Response) error {
-	if resp.StatusCode() >= http.StatusOK && resp.StatusCode() < http.StatusMultipleChoices {
-		return nil
-	}
-
-	body := strings.TrimSpace(string(resp.Body()))
-	bodyLower := strings.ToLower(body)
-
-	if resp.StatusCode() == http.StatusUnauthorized {
-		return ErrUnauthorized
-	}
-	if resp.StatusCode() == http.StatusConflict || strings.Contains(bodyLower, "version conflict") {
-		return ErrVersionConflict
-	}
-	if body == "" {
-		body = http.StatusText(resp.StatusCode())
-	}
-	return fmt.Errorf("http %d: %s", resp.StatusCode(), body)
 }
 
 func computeTransportHash(v any) string {
