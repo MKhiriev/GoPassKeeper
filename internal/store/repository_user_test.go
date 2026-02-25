@@ -39,19 +39,21 @@ func TestCreateUser_Success(t *testing.T) {
 	ctx := context.Background()
 	user := models.User{
 		Login:              "john",
-		MasterPassword:     "hash",
+		AuthHash:           "hash",
 		MasterPasswordHint: "hint",
 		Name:               "John",
+		EncryptionSalt:     "salt",
+		EncryptedMasterKey: "key",
 	}
 
 	now := time.Now()
 
 	rows := sqlmock.
-		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at"}).
-		AddRow(1, user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name, now)
+		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at", "encryption_salt", "encrypted_master_key"}).
+		AddRow(1, user.Login, user.AuthHash, user.MasterPasswordHint, user.Name, now, user.EncryptionSalt, user.EncryptedMasterKey)
 
 	mock.ExpectQuery("INSERT INTO users").
-		WithArgs(user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name).
+		WithArgs(user.Login, user.AuthHash, user.MasterPasswordHint, user.Name, user.EncryptionSalt, user.EncryptedMasterKey).
 		WillReturnRows(rows)
 
 	created, err := repo.CreateUser(ctx, user)
@@ -74,7 +76,14 @@ func TestCreateUser_UniqueViolation(t *testing.T) {
 	user := models.User{Login: "john"}
 
 	mock.ExpectQuery("INSERT INTO users").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(
+			user.Login,
+			sqlmock.AnyArg(), // AuthHash
+			sqlmock.AnyArg(), // MasterPasswordHint
+			sqlmock.AnyArg(), // Name
+			sqlmock.AnyArg(), // EncryptionSalt
+			sqlmock.AnyArg(), // EncryptedMasterKey
+		).
 		WillReturnError(pgError(pgerrcode.UniqueViolation))
 
 	_, err := repo.CreateUser(ctx, user)
@@ -129,8 +138,8 @@ func TestFindUserByLogin_Success(t *testing.T) {
 
 	now := time.Now()
 	rows := sqlmock.
-		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at"}).
-		AddRow(1, "john", "hash", "hint", "John", now)
+		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at", "encryption_salt", "encrypted_master_key"}).
+		AddRow(1, "john", "hash", "hint", "John", now, "salt", "key")
 
 	mock.ExpectQuery("SELECT user_id").
 		WithArgs("john").

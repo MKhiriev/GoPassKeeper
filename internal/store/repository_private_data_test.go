@@ -233,7 +233,7 @@ func TestGetPrivateData(t *testing.T) {
 				args:     []driver.Value{int64(42)},
 				queryErr: errors.New("connection refused"),
 			},
-			want: want{err: "failed to query requested private data"},
+			want: want{err: "error executing sql query: connection refused"},
 		},
 		{
 			name: "error: scan fails (wrong column count)",
@@ -262,7 +262,7 @@ func TestGetPrivateData(t *testing.T) {
 				},
 				rowErr: errors.New("network interruption"),
 			},
-			want: want{err: "error iterating private data rows"},
+			want: want{err: "failed to scan private data rows: network interruption"},
 		},
 	}
 
@@ -498,7 +498,7 @@ func TestGetAllPrivateData(t *testing.T) {
 			mock: mockSetup{
 				queryErr: errors.New("connection refused"),
 			},
-			want: want{err: "failed to query user private data"},
+			want: want{err: "error executing sql query: connection refused"},
 		},
 		{
 			name:   "error: scan fails (wrong column count)",
@@ -507,7 +507,7 @@ func TestGetAllPrivateData(t *testing.T) {
 				badCols: []string{"id", "user_id"},
 				rows:    []privateDataRow{{id: 1, userID: 42}},
 			},
-			want: want{err: "failed to scan cipher row"},
+			want: want{err: "failed to scan private data row"},
 		},
 		{
 			name:   "error: rows iteration error",
@@ -523,7 +523,7 @@ func TestGetAllPrivateData(t *testing.T) {
 				},
 				rowErr: errors.New("network interruption"),
 			},
-			want: want{err: "error iterating cipher rows"},
+			want: want{err: "failed to scan private data rows"},
 		},
 	}
 
@@ -708,7 +708,7 @@ func TestGetAllStates(t *testing.T) {
 			mock: mockSetup{
 				queryErr: errors.New("connection refused"),
 			},
-			want: want{err: "failed to query user private data states"},
+			want: want{err: "error executing sql query"},
 		},
 		{
 			name:   "error: scan fails (wrong column count)",
@@ -717,7 +717,7 @@ func TestGetAllStates(t *testing.T) {
 				badCols: []string{"client_side_id"},
 				rows:    []stateRow{{clientSideID: "cid-1"}},
 			},
-			want: want{err: "failed to scan cipher row"},
+			want: want{err: "failed to scan private data row"},
 		},
 		{
 			name:   "error: rows iteration error",
@@ -728,7 +728,7 @@ func TestGetAllStates(t *testing.T) {
 				},
 				rowErr: errors.New("network interruption"),
 			},
-			want: want{err: "error iterating cipher rows"},
+			want: want{err: "failed to scan private data rows"},
 		},
 	}
 
@@ -954,7 +954,7 @@ func TestGetStates(t *testing.T) {
 				args:     []driver.Value{int64(42)},
 				queryErr: errors.New("connection refused"),
 			},
-			want: want{err: "failed to query user private data"},
+			want: want{err: "error executing sql query"},
 		},
 		{
 			name: "error: scan fails (wrong column count)",
@@ -965,7 +965,7 @@ func TestGetStates(t *testing.T) {
 				badCols: []string{"client_side_id"},
 				rows:    []stateRow{{clientSideID: "cid-1"}},
 			},
-			want: want{err: "failed to scan cipher row"},
+			want: want{err: "failed to scan private data row"},
 		},
 		{
 			name: "error: rows iteration error",
@@ -978,7 +978,7 @@ func TestGetStates(t *testing.T) {
 				},
 				rowErr: errors.New("network interruption"),
 			},
-			want: want{err: "error iterating cipher rows"},
+			want: want{err: "failed to scan private data rows"},
 		},
 	}
 
@@ -1237,7 +1237,7 @@ func TestUpdateSingleRecord(t *testing.T) {
 				args:     []driver.Value{"cid-1", userID, "hash", int64(5)},
 				queryErr: errors.New("connection refused"),
 			},
-			want: want{errWrap: "failed to update private data"},
+			want: want{errWrap: "error executing sql query"},
 		},
 	}
 
@@ -1703,7 +1703,7 @@ func TestUpdateMultipleRecords(t *testing.T) {
 
 		err := repo.updateMultipleRecords(ctx, updates)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to update private data at index 0")
+		assert.Contains(t, err.Error(), "error executing sql query")
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
 
