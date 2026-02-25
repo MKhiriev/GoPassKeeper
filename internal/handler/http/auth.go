@@ -24,16 +24,16 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	registeredUser, err := h.services.AuthService.RegisterUser(ctx, user)
 	if err != nil {
 		log.Err(err).Msg("error occurred during user registration")
-		http.Error(w, "error occurred during user registration", statusFromError(err))
+		resp := responseFromError(err)
+		http.Error(w, resp.message, resp.status)
 		return
-
 	}
 
 	token, err := h.services.AuthService.CreateToken(ctx, registeredUser)
 	if err != nil {
 		log.Err(err).Msg("creation of token failed")
-		status := statusFromError(err)
-		http.Error(w, http.StatusText(status), status)
+		resp := responseFromError(err)
+		http.Error(w, resp.message, resp.status)
 		return
 	}
 
@@ -57,7 +57,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	foundUser, err := h.services.AuthService.Login(ctx, user)
 	if err != nil {
 		log.Err(err).Msg("error occurred during user login")
-		http.Error(w, "error occurred during user login", statusFromError(err))
+		resp := responseFromError(err)
+		http.Error(w, resp.message, resp.status)
 		return
 
 	}
@@ -67,8 +68,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.services.AuthService.CreateToken(ctx, foundUser)
 	if err != nil {
 		log.Err(err).Msg("creation of token failed")
-		status := statusFromError(err)
-		http.Error(w, http.StatusText(status), status)
+		resp := responseFromError(err)
+		http.Error(w, resp.message, resp.status)
 		return
 	}
 
@@ -92,7 +93,8 @@ func (h *Handler) params(w http.ResponseWriter, r *http.Request) {
 	foundUser, err := h.services.AuthService.Params(ctx, user)
 	if err != nil {
 		log.Err(err).Msg("error occurred during user login")
-		http.Error(w, "error occurred during user login", statusFromError(err))
+		resp := responseFromError(err)
+		http.Error(w, resp.message, resp.status)
 		return
 
 	}

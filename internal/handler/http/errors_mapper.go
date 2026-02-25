@@ -8,45 +8,53 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
 )
 
-var errorStatusMap = map[error]int{
-	service.ErrInvalidDataProvided:                            http.StatusBadRequest,
-	service.ErrWrongPassword:                                  http.StatusUnauthorized,
-	service.ErrTokenCreationFailed:                            http.StatusInternalServerError,
-	service.ErrTokenIsExpired:                                 http.StatusUnauthorized,
-	service.ErrTokenIsExpiredOrInvalid:                        http.StatusUnauthorized,
-	service.ErrValidationNoPrivateDataProvided:                http.StatusBadRequest,
-	service.ErrValidationNoDownloadRequestsProvided:           http.StatusBadRequest,
-	service.ErrValidationNoUpdateRequestsProvided:             http.StatusBadRequest,
-	service.ErrValidationNoDeleteRequestsProvided:             http.StatusBadRequest,
-	service.ErrValidationNoUserID:                             http.StatusBadRequest,
-	service.ErrValidationNoClientIDsProvidedForSyncRequests:   http.StatusBadRequest,
-	service.ErrValidationEmptyClientIDProvidedForSyncRequests: http.StatusBadRequest,
-	service.ErrUnauthorizedAccessToDifferentUserData:          http.StatusForbidden,
-	service.ErrVersionIsNotSpecified:                          http.StatusBadRequest,
-	service.ErrRegisterOnServer:                               http.StatusBadGateway,
-	service.ErrLoginOnServer:                                  http.StatusBadGateway,
-
-	store.ErrLoginAlreadyExists:  http.StatusConflict,
-	store.ErrNoUserWasFound:      http.StatusNotFound,
-	store.ErrPrivateDataNotSaved: http.StatusInternalServerError,
-	store.ErrPrivateDataNotFound: http.StatusNotFound,
-	store.ErrVersionConflict:     http.StatusConflict,
-
-	store.ErrBuildingSQLQuery:     http.StatusInternalServerError,
-	store.ErrExecutingQuery:       http.StatusInternalServerError,
-	store.ErrBeginningTransaction: http.StatusInternalServerError,
-	store.ErrCommitingTransaction: http.StatusInternalServerError,
-	store.ErrPreparingStatement:   http.StatusInternalServerError,
-	store.ErrExecutingStatement:   http.StatusInternalServerError,
-	store.ErrScanningRow:          http.StatusInternalServerError,
-	store.ErrScanningRows:         http.StatusInternalServerError,
+type errorResponse struct {
+	message string
+	status  int
 }
 
-func statusFromError(err error) int {
-	for target, status := range errorStatusMap {
+var errorStatusMap = map[error]errorResponse{
+	// service errors
+	service.ErrInvalidDataProvided:                            {message: "invalid data provided", status: http.StatusBadRequest},
+	service.ErrWrongPassword:                                  {message: "wrong password", status: http.StatusUnauthorized},
+	service.ErrTokenCreationFailed:                            {message: "internal server error", status: http.StatusInternalServerError},
+	service.ErrTokenIsExpired:                                 {message: "token is expired", status: http.StatusUnauthorized},
+	service.ErrTokenIsExpiredOrInvalid:                        {message: "token is expired or invalid", status: http.StatusUnauthorized},
+	service.ErrValidationNoPrivateDataProvided:                {message: "no private data provided", status: http.StatusBadRequest},
+	service.ErrValidationNoDownloadRequestsProvided:           {message: "no download requests provided", status: http.StatusBadRequest},
+	service.ErrValidationNoUpdateRequestsProvided:             {message: "no update requests provided", status: http.StatusBadRequest},
+	service.ErrValidationNoDeleteRequestsProvided:             {message: "no delete requests provided", status: http.StatusBadRequest},
+	service.ErrValidationNoUserID:                             {message: "no user ID provided", status: http.StatusBadRequest},
+	service.ErrValidationNoClientIDsProvidedForSyncRequests:   {message: "no client IDs provided for sync", status: http.StatusBadRequest},
+	service.ErrValidationEmptyClientIDProvidedForSyncRequests: {message: "empty client ID provided for sync", status: http.StatusBadRequest},
+	service.ErrUnauthorizedAccessToDifferentUserData:          {message: "access denied", status: http.StatusForbidden},
+	service.ErrVersionIsNotSpecified:                          {message: "version is not specified", status: http.StatusBadRequest},
+	service.ErrRegisterOnServer:                               {message: "registration failed", status: http.StatusBadGateway},
+	service.ErrLoginOnServer:                                  {message: "login failed", status: http.StatusBadGateway},
+
+	// store errors
+	store.ErrLoginAlreadyExists:  {message: "login already exists", status: http.StatusConflict},
+	store.ErrNoUserWasFound:      {message: "user not found", status: http.StatusNotFound},
+	store.ErrPrivateDataNotSaved: {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrPrivateDataNotFound: {message: "data not found", status: http.StatusNotFound},
+	store.ErrVersionConflict:     {message: "version conflict, please sync", status: http.StatusConflict},
+
+	// store internal errors
+	store.ErrBuildingSQLQuery:     {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrExecutingQuery:       {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrBeginningTransaction: {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrCommitingTransaction: {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrPreparingStatement:   {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrExecutingStatement:   {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrScanningRow:          {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrScanningRows:         {message: "internal server error", status: http.StatusInternalServerError},
+}
+
+func responseFromError(err error) errorResponse {
+	for target, resp := range errorStatusMap {
 		if errors.Is(err, target) {
-			return status
+			return resp
 		}
 	}
-	return http.StatusInternalServerError
+	return errorResponse{message: "internal server error", status: http.StatusInternalServerError}
 }
