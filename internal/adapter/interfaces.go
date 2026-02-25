@@ -6,6 +6,8 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=../mock/server_adapter_mock.go -package=mock
+
 // ServerAdapter defines transport-agnostic communication with GoPassKeeper server.
 type ServerAdapter interface {
 	SetToken(token string)
