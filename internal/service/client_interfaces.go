@@ -17,7 +17,7 @@ type ClientCryptoService interface {
 }
 
 type ClientAuthService interface {
-	Register(ctx context.Context, user models.User) (userID int64, encryptionKey []byte, err error)
+	Register(ctx context.Context, user models.User) error
 	Login(ctx context.Context, user models.User) (userID int64, encryptionKey []byte, err error)
 }
 

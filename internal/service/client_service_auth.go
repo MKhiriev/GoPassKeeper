@@ -24,22 +24,22 @@ func NewClientAuthService(localStore *store.ClientStorages, serverAdapter adapte
 	return &clientAuthService{localStore: localStore, adapter: serverAdapter, crypto: crypto}
 }
 
-func (a *clientAuthService) Register(ctx context.Context, user models.User) (int64, []byte, error) {
+func (a *clientAuthService) Register(ctx context.Context, user models.User) error {
 	salt, err := a.crypto.GenerateEncryptionSalt()
 	if err != nil {
-		return 0, nil, fmt.Errorf("error generating Salt: %v", err)
+		return fmt.Errorf("error generating Salt: %v", err)
 	}
 
 	dek, err := a.crypto.GenerateDEK()
 	if err != nil {
-		return 0, nil, fmt.Errorf("error generating DEK: %v", err)
+		return fmt.Errorf("error generating DEK: %v", err)
 	}
 
 	kek := a.crypto.GenerateKEK(user.MasterPassword, salt)
 
 	encryptedDek, err := a.crypto.GetEncryptedDEK(dek, kek)
 	if err != nil {
-		return 0, nil, fmt.Errorf("error encription DEK: %v", err)
+		return fmt.Errorf("error encription DEK: %v", err)
 	}
 
 	authHashBytes := a.crypto.GenerateAuthHash(kek, authSalt)
@@ -51,12 +51,12 @@ func (a *clientAuthService) Register(ctx context.Context, user models.User) (int
 
 	user.MasterPassword = ""
 
-	registeredUser, err := a.adapter.Register(ctx, user)
+	_, err = a.adapter.Register(ctx, user)
 	if err != nil {
-		return 0, nil, fmt.Errorf("%w: %v", ErrRegisterOnServer, err)
+		return fmt.Errorf("%w: %v", ErrRegisterOnServer, err)
 	}
 
-	return registeredUser.UserID, dek, nil
+	return nil
 }
 
 func (a *clientAuthService) Login(ctx context.Context, user models.User) (int64, []byte, error) {

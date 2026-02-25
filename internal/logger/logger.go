@@ -12,6 +12,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/rs/zerolog"
@@ -45,6 +46,29 @@ func NewLogger(role string) *Logger {
 
 	zerolog.CallerFieldName = "func"
 	logger := zerolog.New(os.Stdout).With().
+		Str("role", role).
+		Timestamp().
+		Caller().
+		Logger()
+
+	return &Logger{logger}
+}
+func NewClientLogger(role string) *Logger {
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		return runtime.FuncForPC(pc).Name()
+	}
+	zerolog.CallerFieldName = "func"
+
+	// Open log file near the executable
+	execPath, _ := os.Executable()
+	logPath := filepath.Join(filepath.Dir(execPath), "logs")
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		logFile = os.Stdout // fallback to stdout if file can't be opened
+	}
+
+	logger := zerolog.New(logFile).With().
 		Str("role", role).
 		Timestamp().
 		Caller().

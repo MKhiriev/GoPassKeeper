@@ -21,7 +21,7 @@ var (
 func main() {
 	printBuildInfo()
 
-	log := logger.NewLogger("go-pass-client")
+	log := logger.NewClientLogger("go-pass-client")
 	cfg, err := config.GetClientConfig()
 	if err != nil {
 		log.Fatal().Err(err).Msg("error getting configs")
