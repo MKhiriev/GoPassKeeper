@@ -67,6 +67,84 @@ func TestClientCryptoService_EncryptDecrypt_RoundTrip(t *testing.T) {
 	assert.Nil(t, got.AdditionalFields)
 }
 
+func TestClientCryptoService_EncryptDecrypt_AllTypes(t *testing.T) {
+	totp := "JBSWY3DPEHPK3PXP"
+
+	tests := []struct {
+		name    string
+		payload models.DecipheredPayload
+	}{
+		{
+			name: "LoginPassword",
+			payload: models.DecipheredPayload{
+				Type:     models.LoginPassword,
+				Metadata: models.Metadata{Name: "GitHub"},
+				LoginData: &models.LoginData{
+					Username: "user@example.com",
+					Password: "s3cr3t",
+					URIs:     []models.LoginURI{{URI: "https://github.com", Match: 1}},
+					TOTP:     &totp,
+				},
+			},
+		},
+		{
+			name: "Text",
+			payload: models.DecipheredPayload{
+				Type:     models.Text,
+				Metadata: models.Metadata{Name: "My Note"},
+				TextData: &models.TextData{Text: "секретная заметка"},
+				Notes:    &models.Notes{Notes: "доп. заметка", IsEncrypted: false},
+			},
+		},
+		{
+			name: "BankCard",
+			payload: models.DecipheredPayload{
+				Type:     models.BankCard,
+				Metadata: models.Metadata{Name: "Visa"},
+				BankCardData: &models.BankCardData{
+					CardholderName: "JOHN DOE",
+					Number:         "4111111111111111",
+					Brand:          "Visa",
+					ExpMonth:       "12",
+					ExpYear:        "2027",
+					Code:           "123",
+				},
+			},
+		},
+		{
+			name: "Binary",
+			payload: models.DecipheredPayload{
+				Type:     models.Binary,
+				Metadata: models.Metadata{Name: "passport.pdf"},
+				BinaryData: &models.BinaryData{
+					ID:       "blob-001",
+					FileName: "passport.pdf",
+					Size:     204800,
+					Key:      "enc-key-ref",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc, _ := newRealCryptoSvc(t)
+
+			enc, err := svc.EncryptPayload(tt.payload)
+			require.NoError(t, err)
+
+			got, err := svc.DecryptPayload(enc)
+			require.NoError(t, err)
+
+			// UserID и ClientSideID не шифруются — проставляем из оригинала
+			got.UserID = tt.payload.UserID
+			got.ClientSideID = tt.payload.ClientSideID
+
+			assert.Equal(t, tt.payload, got)
+		})
+	}
+}
+
 func TestClientCryptoService_EncryptDecrypt_WithOptionalFields(t *testing.T) {
 	svc, _ := newRealCryptoSvc(t)
 
