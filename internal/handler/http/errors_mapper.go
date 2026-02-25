@@ -25,8 +25,8 @@ var errorStatusMap = map[error]int{
 	service.ErrRegisterOnServer:                               http.StatusBadGateway,
 	service.ErrLoginOnServer:                                  http.StatusBadGateway,
 
-	store.ErrLoginAlreadyExists:  http.StatusBadRequest,
-	store.ErrNoUserWasFound:      http.StatusBadRequest,
+	store.ErrLoginAlreadyExists:  http.StatusConflict,
+	store.ErrNoUserWasFound:      http.StatusNotFound,
 	store.ErrPrivateDataNotSaved: http.StatusInternalServerError,
 	store.ErrPrivateDataNotFound: http.StatusNotFound,
 	store.ErrVersionConflict:     http.StatusConflict,
