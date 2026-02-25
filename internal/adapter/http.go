@@ -86,13 +86,9 @@ func (h *httpServerAdapter) Register(ctx context.Context, user models.User) (mod
 	if err != nil {
 		return models.User{}, fmt.Errorf("register parse bearer token: %w", err)
 	}
-	userID, err := utils.ParseUserIDFromJWT(token)
-	if err != nil {
-		return models.User{}, fmt.Errorf("register parse user id: %w", err)
-	}
 
 	h.SetToken(token)
-	return models.User{UserID: userID, Login: user.Login, Name: user.Name}, nil
+	return user, nil
 }
 
 func (h *httpServerAdapter) RequestSalt(ctx context.Context, user models.User) (models.User, error) {
@@ -112,7 +108,7 @@ func (h *httpServerAdapter) RequestSalt(ctx context.Context, user models.User) (
 		return user, err
 	}
 
-	return foundUser, nil
+	return models.User{Login: user.Login, EncryptionSalt: foundUser.EncryptionSalt}, nil
 }
 
 func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models.User, error) {
@@ -138,11 +134,6 @@ func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models
 	}
 
 	h.SetToken(token)
-	userID, err := utils.ParseUserIDFromJWT(token)
-	if err != nil {
-		return user, fmt.Errorf("login parse user id: %w", err)
-	}
-	foundUser.UserID = userID
 	return foundUser, nil
 }
 
