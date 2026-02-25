@@ -94,5 +94,7 @@ func (a *clientAuthService) Login(ctx context.Context, user models.User) (int64,
 		return 0, nil, fmt.Errorf("decrypt DEK: %w", err)
 	}
 
+	a.clientCryptoService.SetEncryptionKey(dek)
+
 	return foundUser.UserID, dek, nil
 }
