@@ -9,11 +9,21 @@ import (
 )
 
 var errorStatusMap = map[error]int{
-	service.ErrInvalidDataProvided:                          http.StatusBadRequest,
-	service.ErrValidationNoUpdateRequestsProvided:           http.StatusBadRequest,
-	service.ErrValidationNoClientIDsProvidedForSyncRequests: http.StatusBadRequest,
-	service.ErrValidationNoUserID:                           http.StatusUnauthorized,
-	service.ErrUnauthorizedAccessToDifferentUserData:        http.StatusForbidden,
+	service.ErrInvalidDataProvided:                            http.StatusBadRequest,
+	service.ErrWrongPassword:                                  http.StatusUnauthorized,
+	service.ErrTokenIsExpired:                                 http.StatusUnauthorized,
+	service.ErrTokenIsExpiredOrInvalid:                        http.StatusUnauthorized,
+	service.ErrValidationNoPrivateDataProvided:                http.StatusBadRequest,
+	service.ErrValidationNoDownloadRequestsProvided:           http.StatusBadRequest,
+	service.ErrValidationNoUpdateRequestsProvided:             http.StatusBadRequest,
+	service.ErrValidationNoDeleteRequestsProvided:             http.StatusBadRequest,
+	service.ErrValidationNoUserID:                             http.StatusBadRequest,
+	service.ErrValidationNoClientIDsProvidedForSyncRequests:   http.StatusBadRequest,
+	service.ErrValidationEmptyClientIDProvidedForSyncRequests: http.StatusBadRequest,
+	service.ErrUnauthorizedAccessToDifferentUserData:          http.StatusForbidden,
+	service.ErrVersionIsNotSpecified:                          http.StatusBadRequest,
+	service.ErrRegisterOnServer:                               http.StatusBadGateway,
+	service.ErrLoginOnServer:                                  http.StatusBadGateway,
 
 	store.ErrLoginAlreadyExists:  http.StatusBadRequest,
 	store.ErrNoUserWasFound:      http.StatusBadRequest,
