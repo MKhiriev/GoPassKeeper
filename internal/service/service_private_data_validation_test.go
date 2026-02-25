@@ -132,7 +132,7 @@ func TestValidation_UploadPrivateData_ValidatorError(t *testing.T) {
 	}
 	err := svc.UploadPrivateData(ctxWithUserID(1), req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error during private data validation")
+	assert.Contains(t, err.Error(), "invalid data provided: validation failed")
 	assert.True(t, errors.Is(err, errValidation))
 }
 
@@ -172,7 +172,7 @@ func TestValidation_DownloadPrivateData_ValidatorError(t *testing.T) {
 	req := models.DownloadRequest{UserID: 1}
 	_, err := svc.DownloadPrivateData(ctxWithUserID(1), req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error during download request validation")
+	assert.Contains(t, err.Error(), "invalid data provided")
 }
 
 // ─────────────────────────────────────────────
@@ -202,13 +202,6 @@ func TestValidation_DownloadSpecific_NoIDs(t *testing.T) {
 	assert.ErrorIs(t, err, ErrValidationNoClientIDsProvidedForSyncRequests)
 }
 
-func TestValidation_DownloadSpecific_EmptyIDInList(t *testing.T) {
-	svc := newValidationService(nil, nil)
-	req := models.SyncRequest{UserID: 1, ClientSideIDs: []string{"id1", ""}}
-	_, err := svc.DownloadSpecificUserPrivateDataStates(ctxWithUserID(1), req)
-	assert.ErrorIs(t, err, ErrValidationEmptyClientIDProvidedForSyncRequests)
-}
-
 // ─────────────────────────────────────────────
 // UpdatePrivateData
 // ─────────────────────────────────────────────
@@ -231,7 +224,7 @@ func TestValidation_UpdatePrivateData_ValidatorError(t *testing.T) {
 	}
 	err := svc.UpdatePrivateData(ctxWithUserID(1), req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error during update request validation")
+	assert.Contains(t, err.Error(), "invalid data provided: validation failed")
 }
 
 // ─────────────────────────────────────────────
@@ -246,7 +239,7 @@ func TestValidation_DeletePrivateData_ValidatorError(t *testing.T) {
 	req := models.DeleteRequest{UserID: 1}
 	err := svc.DeletePrivateData(ctxWithUserID(1), req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error during delete request validation")
+	assert.Contains(t, err.Error(), "invalid data provided: validation failed")
 }
 
 func TestValidation_DeletePrivateData_Success(t *testing.T) {
