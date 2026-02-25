@@ -7,7 +7,8 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
-// TODO проверить и переопределить при необходимости
+//go:generate mockgen -source=client_interfaces.go -destination=../mock/client_services_mock.go -package=mock
+
 type ClientCryptoService interface {
 	SetEncryptionKey(key []byte)
 
