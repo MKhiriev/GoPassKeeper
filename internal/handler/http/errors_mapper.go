@@ -11,6 +11,7 @@ import (
 var errorStatusMap = map[error]int{
 	service.ErrInvalidDataProvided:                            http.StatusBadRequest,
 	service.ErrWrongPassword:                                  http.StatusUnauthorized,
+	service.ErrTokenCreationFailed:                            http.StatusInternalServerError,
 	service.ErrTokenIsExpired:                                 http.StatusUnauthorized,
 	service.ErrTokenIsExpiredOrInvalid:                        http.StatusUnauthorized,
 	service.ErrValidationNoPrivateDataProvided:                http.StatusBadRequest,

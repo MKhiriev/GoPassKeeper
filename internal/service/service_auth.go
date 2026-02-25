@@ -145,7 +145,7 @@ func (a *authService) Params(ctx context.Context, user models.User) (models.User
 func (a *authService) CreateToken(ctx context.Context, user models.User) (models.Token, error) {
 	token, err := utils.GenerateJWTToken(a.tokenIssuer, user.UserID, a.tokenDuration, a.tokenSignKey)
 	if err != nil {
-		return models.Token{}, fmt.Errorf("error creating JWT token: %w", err)
+		return models.Token{}, fmt.Errorf("%w: %w", ErrTokenCreationFailed, err)
 	}
 
 	return token, nil

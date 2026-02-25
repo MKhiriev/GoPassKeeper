@@ -12,6 +12,9 @@ var (
 	// password does not match the stored credential hash for the given user.
 	ErrWrongPassword = errors.New("wrong password")
 
+	// ErrTokenCreationFailed is returned when JWT library returns error
+	ErrTokenCreationFailed = errors.New("error creating JWT token")
+
 	// ErrTokenIsExpired is returned when a JWT has passed its expiration time (exp
 	// claim) but is otherwise structurally valid.
 	ErrTokenIsExpired = errors.New("token is expired")
