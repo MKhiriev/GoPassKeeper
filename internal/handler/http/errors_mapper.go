@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/app"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
 )
@@ -14,40 +15,37 @@ type errorResponse struct {
 }
 
 var errorStatusMap = map[error]errorResponse{
-	// service errors
-	service.ErrInvalidDataProvided:                            {message: "invalid data provided", status: http.StatusBadRequest},
-	service.ErrWrongPassword:                                  {message: "invalid login/password", status: http.StatusUnauthorized},
-	service.ErrTokenCreationFailed:                            {message: "internal server error", status: http.StatusInternalServerError},
-	service.ErrTokenIsExpired:                                 {message: "token is expired", status: http.StatusUnauthorized},
-	service.ErrTokenIsExpiredOrInvalid:                        {message: "token is expired or invalid", status: http.StatusUnauthorized},
-	service.ErrValidationNoPrivateDataProvided:                {message: "no private data provided", status: http.StatusBadRequest},
-	service.ErrValidationNoDownloadRequestsProvided:           {message: "no download requests provided", status: http.StatusBadRequest},
-	service.ErrValidationNoUpdateRequestsProvided:             {message: "no update requests provided", status: http.StatusBadRequest},
-	service.ErrValidationNoDeleteRequestsProvided:             {message: "no delete requests provided", status: http.StatusBadRequest},
-	service.ErrValidationNoUserID:                             {message: "no user ID provided", status: http.StatusBadRequest},
-	service.ErrValidationNoClientIDsProvidedForSyncRequests:   {message: "no client IDs provided for sync", status: http.StatusBadRequest},
-	service.ErrValidationEmptyClientIDProvidedForSyncRequests: {message: "empty client ID provided for sync", status: http.StatusBadRequest},
-	service.ErrUnauthorizedAccessToDifferentUserData:          {message: "access denied", status: http.StatusForbidden},
-	service.ErrVersionIsNotSpecified:                          {message: "version is not specified", status: http.StatusBadRequest},
-	service.ErrRegisterOnServer:                               {message: "registration failed", status: http.StatusBadGateway},
-	service.ErrLoginOnServer:                                  {message: "login failed", status: http.StatusBadGateway},
+	service.ErrInvalidDataProvided:                            {message: app.MsgInvalidDataProvided, status: http.StatusBadRequest},
+	service.ErrWrongPassword:                                  {message: app.MsgInvalidLoginPassword, status: http.StatusUnauthorized},
+	service.ErrTokenCreationFailed:                            {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	service.ErrTokenIsExpired:                                 {message: app.MsgTokenIsExpired, status: http.StatusUnauthorized},
+	service.ErrTokenIsExpiredOrInvalid:                        {message: app.MsgTokenIsExpiredOrInvalid, status: http.StatusUnauthorized},
+	service.ErrValidationNoPrivateDataProvided:                {message: app.MsgNoPrivateDataProvided, status: http.StatusBadRequest},
+	service.ErrValidationNoDownloadRequestsProvided:           {message: app.MsgNoDownloadRequestsProvided, status: http.StatusBadRequest},
+	service.ErrValidationNoUpdateRequestsProvided:             {message: app.MsgNoUpdateRequestsProvided, status: http.StatusBadRequest},
+	service.ErrValidationNoDeleteRequestsProvided:             {message: app.MsgNoDeleteRequestsProvided, status: http.StatusBadRequest},
+	service.ErrValidationNoUserID:                             {message: app.MsgNoUserIDProvided, status: http.StatusBadRequest},
+	service.ErrValidationNoClientIDsProvidedForSyncRequests:   {message: app.MsgNoClientIDsForSync, status: http.StatusBadRequest},
+	service.ErrValidationEmptyClientIDProvidedForSyncRequests: {message: app.MsgEmptyClientIDForSync, status: http.StatusBadRequest},
+	service.ErrUnauthorizedAccessToDifferentUserData:          {message: app.MsgAccessDenied, status: http.StatusForbidden},
+	service.ErrVersionIsNotSpecified:                          {message: app.MsgVersionIsNotSpecified, status: http.StatusBadRequest},
+	service.ErrRegisterOnServer:                               {message: app.MsgRegistrationFailed, status: http.StatusBadGateway},
+	service.ErrLoginOnServer:                                  {message: app.MsgLoginFailed, status: http.StatusBadGateway},
 
-	// store errors
-	store.ErrLoginAlreadyExists:  {message: "login already exists", status: http.StatusConflict},
-	store.ErrNoUserWasFound:      {message: "invalid login/password", status: http.StatusUnauthorized},
-	store.ErrPrivateDataNotSaved: {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrPrivateDataNotFound: {message: "data not found", status: http.StatusNotFound},
-	store.ErrVersionConflict:     {message: "version conflict, please sync", status: http.StatusConflict},
+	store.ErrLoginAlreadyExists:  {message: app.MsgLoginAlreadyExists, status: http.StatusConflict},
+	store.ErrNoUserWasFound:      {message: app.MsgInvalidLoginPassword, status: http.StatusUnauthorized},
+	store.ErrPrivateDataNotSaved: {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrPrivateDataNotFound: {message: app.MsgDataNotFound, status: http.StatusNotFound},
+	store.ErrVersionConflict:     {message: app.MsgVersionConflict, status: http.StatusConflict},
 
-	// store internal errors
-	store.ErrBuildingSQLQuery:     {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrExecutingQuery:       {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrBeginningTransaction: {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrCommitingTransaction: {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrPreparingStatement:   {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrExecutingStatement:   {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrScanningRow:          {message: "internal server error", status: http.StatusInternalServerError},
-	store.ErrScanningRows:         {message: "internal server error", status: http.StatusInternalServerError},
+	store.ErrBuildingSQLQuery:     {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrExecutingQuery:       {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrBeginningTransaction: {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrCommitingTransaction: {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrPreparingStatement:   {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrExecutingStatement:   {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrScanningRow:          {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
+	store.ErrScanningRows:         {message: app.MsgInternalServerError, status: http.StatusInternalServerError},
 }
 
 func responseFromError(err error) errorResponse {
@@ -56,5 +54,5 @@ func responseFromError(err error) errorResponse {
 			return resp
 		}
 	}
-	return errorResponse{message: "internal server error", status: http.StatusInternalServerError}
+	return errorResponse{message: app.MsgInternalServerError, status: http.StatusInternalServerError}
 }
