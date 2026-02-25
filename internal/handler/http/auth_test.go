@@ -28,6 +28,7 @@ type mockAuthService struct {
 	loginFn        func(ctx context.Context, user models.User) (models.User, error)
 	createTokenFn  func(ctx context.Context, user models.User) (models.Token, error)
 	parseTokenFn   func(ctx context.Context, tokenString string) (models.Token, error)
+	paramsFn       func(ctx context.Context, user models.User) (models.User, error)
 }
 
 func (m *mockAuthService) RegisterUser(ctx context.Context, user models.User) (models.User, error) {
@@ -44,6 +45,10 @@ func (m *mockAuthService) CreateToken(ctx context.Context, user models.User) (mo
 
 func (m *mockAuthService) ParseToken(ctx context.Context, tokenString string) (models.Token, error) {
 	return m.parseTokenFn(ctx, tokenString)
+}
+
+func (m *mockAuthService) Params(ctx context.Context, user models.User) (models.User, error) {
+	return m.paramsFn(ctx, user)
 }
 
 // ─────────────────────────────────────────────

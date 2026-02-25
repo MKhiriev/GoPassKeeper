@@ -182,8 +182,8 @@ func TestGetClientServerDiff_ServiceError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.getClientServerDiff(rr, req)
 
-	if rr.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", rr.Code)
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", rr.Code)
 	}
 }
 

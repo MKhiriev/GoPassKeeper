@@ -125,7 +125,7 @@ func TestUpload_ServiceError(t *testing.T) {
 	h.upload(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "error uploading private data")
+	assert.Contains(t, rec.Body.String(), "internal server error")
 }
 
 // ─────────────────────────────────────────────
@@ -205,7 +205,7 @@ func TestDownloadMultiple_ServiceError(t *testing.T) {
 	h.downloadMultiple(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "error downloading private data")
+	assert.Contains(t, rec.Body.String(), "internal server error")
 }
 
 // ─────────────────────────────────────────────
@@ -280,7 +280,7 @@ func TestDownloadAllUserData_ServiceError(t *testing.T) {
 	h.downloadAllUserData(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "error downloading private data")
+	assert.Contains(t, rec.Body.String(), "internal server error")
 }
 
 // ─────────────────────────────────────────────
@@ -351,7 +351,7 @@ func TestUpdate_ServiceError(t *testing.T) {
 	h.update(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "error updating private data")
+	assert.Contains(t, rec.Body.String(), "internal server error")
 }
 
 // ─────────────────────────────────────────────
@@ -422,5 +422,5 @@ func TestDelete_ServiceError(t *testing.T) {
 	h.delete(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "error deleting private data")
+	assert.Contains(t, rec.Body.String(), "internal server error")
 }

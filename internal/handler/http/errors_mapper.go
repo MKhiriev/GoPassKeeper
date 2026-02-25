@@ -16,7 +16,7 @@ type errorResponse struct {
 var errorStatusMap = map[error]errorResponse{
 	// service errors
 	service.ErrInvalidDataProvided:                            {message: "invalid data provided", status: http.StatusBadRequest},
-	service.ErrWrongPassword:                                  {message: "wrong password", status: http.StatusUnauthorized},
+	service.ErrWrongPassword:                                  {message: "invalid login/password", status: http.StatusUnauthorized},
 	service.ErrTokenCreationFailed:                            {message: "internal server error", status: http.StatusInternalServerError},
 	service.ErrTokenIsExpired:                                 {message: "token is expired", status: http.StatusUnauthorized},
 	service.ErrTokenIsExpiredOrInvalid:                        {message: "token is expired or invalid", status: http.StatusUnauthorized},
@@ -34,7 +34,7 @@ var errorStatusMap = map[error]errorResponse{
 
 	// store errors
 	store.ErrLoginAlreadyExists:  {message: "login already exists", status: http.StatusConflict},
-	store.ErrNoUserWasFound:      {message: "user not found", status: http.StatusNotFound},
+	store.ErrNoUserWasFound:      {message: "invalid login/password", status: http.StatusUnauthorized},
 	store.ErrPrivateDataNotSaved: {message: "internal server error", status: http.StatusInternalServerError},
 	store.ErrPrivateDataNotFound: {message: "data not found", status: http.StatusNotFound},
 	store.ErrVersionConflict:     {message: "version conflict, please sync", status: http.StatusConflict},

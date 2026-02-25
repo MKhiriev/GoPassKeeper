@@ -28,6 +28,9 @@ func (m *mockAuthSvc) CreateToken(_ context.Context, _ models.User) (models.Toke
 func (m *mockAuthSvc) ParseToken(_ context.Context, _ string) (models.Token, error) {
 	return models.Token{UserID: 1}, nil
 }
+func (m *mockAuthSvc) Params(ctx context.Context, user models.User) (models.User, error) {
+	return models.User{}, nil
+}
 
 // ---- Mock: AppInfoService ----
 

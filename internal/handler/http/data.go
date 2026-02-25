@@ -36,8 +36,7 @@ func (h *Handler) downloadMultiple(w http.ResponseWriter, r *http.Request) {
 	var dataArrayFromBody models.DownloadRequest
 	if err := json.NewDecoder(r.Body).Decode(&dataArrayFromBody); err != nil {
 		log.Err(err).Str("func", "*Handler.downloadMultiple").Msg("Invalid JSON was passed")
-		resp := responseFromError(err)
-		http.Error(w, resp.message, resp.status)
+		http.Error(w, "Invalid JSON was passed", http.StatusBadRequest)
 		return
 	}
 
