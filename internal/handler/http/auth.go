@@ -110,7 +110,7 @@ func (h *Handler) params(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug().Any("received user info", user).Send()
 
-	foundUser, err := h.services.AuthService.Login(ctx, user)
+	foundUser, err := h.services.AuthService.Params(ctx, user)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidDataProvided):

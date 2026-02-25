@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 )

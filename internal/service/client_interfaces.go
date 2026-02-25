@@ -17,11 +17,13 @@ type ClientCryptoService interface {
 }
 
 type ClientAuthService interface {
-	Register(ctx context.Context, user models.User) error
-	Login(ctx context.Context, user models.User) (encryptionKey []byte, err error)
+	Register(ctx context.Context, user models.User) (userID int64, encryptionKey []byte, err error)
+	Login(ctx context.Context, user models.User) (userID int64, encryptionKey []byte, err error)
 }
 
 type ClientPrivateDataService interface {
+	SetEncryptionKey(key []byte)
+
 	Create(ctx context.Context, userID int64, plain models.DecipheredPayload) error
 	GetAll(ctx context.Context, userID int64) ([]models.DecipheredPayload, error)
 	Get(ctx context.Context, clientSideID string, userID int64) (models.DecipheredPayload, error)

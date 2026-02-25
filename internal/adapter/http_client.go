@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
@@ -26,14 +27,39 @@ type httpServerAdapter struct {
 
 func NewHTTPServerAdapter(adapterCfg config.ClientAdapter, appCfg config.ClientApp, logger *logger.Logger) (ServerAdapter, error) {
 	client := utils.NewHTTPClient()
+	baseURL, err := normalizeBaseURL(adapterCfg.HTTPAddress)
+	if err != nil {
+		return nil, fmt.Errorf("invalid adapter http address: %w", err)
+	}
 
 	client.
-		SetBaseURL(adapterCfg.HTTPAddress).
+		SetBaseURL(baseURL).
 		SetTimeout(adapterCfg.RequestTimeout)
 
 	utils.InitHasherPool(appCfg.HashKey)
 
 	return &httpServerAdapter{client: client, hashKey: appCfg.HashKey, logger: logger}, nil
+}
+
+func normalizeBaseURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", fmt.Errorf("empty address")
+	}
+
+	if !strings.Contains(raw, "://") {
+		raw = "http://" + raw
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", fmt.Errorf("address must include host and scheme")
+	}
+
+	return strings.TrimRight(u.String(), "/"), nil
 }
 
 func (h *httpServerAdapter) SetToken(token string) {
@@ -77,7 +103,7 @@ func (h *httpServerAdapter) RequestSalt(ctx context.Context, user models.User) (
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(user).
-		SetResult(foundUser).
+		SetResult(&foundUser).
 		Post("/api/auth/params")
 
 	if err != nil {
@@ -97,7 +123,7 @@ func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(user).
-		SetResult(foundUser).
+		SetResult(&foundUser).
 		Post("/api/auth/login")
 
 	if err != nil {
@@ -113,6 +139,11 @@ func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models
 	}
 
 	h.SetToken(token)
+	userID, err := utils.ParseUserIDFromJWT(token)
+	if err != nil {
+		return user, fmt.Errorf("login parse user id: %w", err)
+	}
+	foundUser.UserID = userID
 	return foundUser, nil
 }
 

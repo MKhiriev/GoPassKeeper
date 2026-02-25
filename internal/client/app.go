@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -26,23 +27,12 @@ func NewApp(services *service.ClientServices, ui *tui.TUI, cfg config.ClientWork
 func (a *App) Run() error {
 	ctx := context.Background()
 
-	var (
-		userID int64
-		key    []byte
-		err    error
-	)
-
-	userID, _, err = a.services.AuthService.RestoreSession(ctx)
+	userID, key, err := a.tui.LoginFlow(ctx)
 	if err != nil {
-		userID, key, err = a.tui.LoginFlow(ctx)
-		if err != nil {
-			return err
+		if errors.Is(err, tui.ErrUserQuit) {
+			return nil
 		}
-	} else {
-		key, err = a.tui.UnlockWithMasterPassword(userID, a.services.CryptoService.DeriveKey)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	a.services.PrivateDataService.SetEncryptionKey(key)
@@ -51,18 +41,15 @@ func (a *App) Run() error {
 		fmt.Fprintf(os.Stderr, "sync warning: %v\n", err)
 	}
 
-	a.services.SyncJob.Start(ctx, userID, 5*time.Minute)
+	a.services.SyncJob.Start(ctx, userID, a.syncJobTime)
 	defer a.services.SyncJob.Stop()
 
 	logout, err := a.tui.MainLoop(ctx, userID)
-	if err != nil {
-		return err
-	}
 	if logout {
 		return a.Run()
 	}
 
-	return nil
+	return err
 }
 
 func getenv(key, fallback string) string {

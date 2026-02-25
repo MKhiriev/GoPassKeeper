@@ -77,7 +77,7 @@ const (
 	deletePrivateData = `
 		UPDATE ciphers SET
 			deleted    = true,
-			updated_at = now()
+			updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = $1 AND client_side_id = $2;`
 
 	incrementVersion = `

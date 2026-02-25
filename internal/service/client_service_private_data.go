@@ -22,6 +22,10 @@ func NewClientPrivateDataService(localStore *store.ClientStorages, serverAdapter
 	return &clientPrivateDataService{localStore: localStore, adapter: serverAdapter, crypto: crypto, clientIDGenerator: utils.NewUUIDGenerator()}
 }
 
+func (p *clientPrivateDataService) SetEncryptionKey(key []byte) {
+	p.crypto.SetEncryptionKey(key)
+}
+
 func (p *clientPrivateDataService) Create(ctx context.Context, userID int64, plain models.DecipheredPayload) error {
 	encPayload, err := p.crypto.EncryptPayload(plain)
 	if err != nil {

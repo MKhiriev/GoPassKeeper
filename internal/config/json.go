@@ -45,6 +45,9 @@ type StructuredJSONConfig struct {
 
 	// Adapter is reserved for future external adapter configuration.
 	Adapter struct {
+		HTTPAddress    string   `json:"http_address"`
+		GRPCAddress    string   `json:"grpc_address"`
+		RequestTimeout Duration `json:"request_timeout"`
 	} `json:"adapter,omitempty"`
 
 	// Workers is reserved for future background worker configuration.
@@ -95,8 +98,14 @@ func parseJSON(jsonFilePath string) (*StructuredConfig, error) {
 			GRPCAddress:    jsonCfg.Server.GRPCAddress,
 			RequestTimeout: time.Duration(jsonCfg.Server.RequestTimeout),
 		},
-		Adapter:      Adapter{},
-		Workers:      Workers{},
+		Adapter: Adapter{
+			HTTPAddress:    jsonCfg.Adapter.HTTPAddress,
+			GRPCAddress:    jsonCfg.Adapter.GRPCAddress,
+			RequestTimeout: time.Duration(jsonCfg.Adapter.RequestTimeout),
+		},
+		Workers: Workers{
+			SyncInterval: time.Duration(jsonCfg.Workers.SyncInterval),
+		},
 		JSONFilePath: "", // intentionally cleared to prevent re-processing
 	}
 

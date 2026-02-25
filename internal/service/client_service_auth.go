@@ -24,22 +24,22 @@ func NewClientAuthService(localStore *store.ClientStorages, serverAdapter adapte
 	return &clientAuthService{localStore: localStore, adapter: serverAdapter, crypto: crypto}
 }
 
-func (a *clientAuthService) Register(ctx context.Context, user models.User) error {
+func (a *clientAuthService) Register(ctx context.Context, user models.User) (int64, []byte, error) {
 	salt, err := a.crypto.GenerateEncryptionSalt()
 	if err != nil {
-		return fmt.Errorf("error generating Salt: %v", err)
+		return 0, nil, fmt.Errorf("error generating Salt: %v", err)
 	}
 
 	dek, err := a.crypto.GenerateDEK()
 	if err != nil {
-		return fmt.Errorf("error generating DEK: %v", err)
+		return 0, nil, fmt.Errorf("error generating DEK: %v", err)
 	}
 
 	kek := a.crypto.GenerateKEK(user.MasterPassword, salt)
 
 	encryptedDek, err := a.crypto.GetEncryptedDEK(dek, kek)
 	if err != nil {
-		return fmt.Errorf("error encription DEK: %v", err)
+		return 0, nil, fmt.Errorf("error encription DEK: %v", err)
 	}
 
 	authHashBytes := a.crypto.GenerateAuthHash(kek, authSalt)
@@ -51,25 +51,25 @@ func (a *clientAuthService) Register(ctx context.Context, user models.User) erro
 
 	user.MasterPassword = ""
 
-	_, err = a.adapter.Register(ctx, user)
+	registeredUser, err := a.adapter.Register(ctx, user)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrRegisterOnServer, err)
+		return 0, nil, fmt.Errorf("%w: %v", ErrRegisterOnServer, err)
 	}
 
-	return nil
+	return registeredUser.UserID, dek, nil
 }
 
-func (a *clientAuthService) Login(ctx context.Context, user models.User) ([]byte, error) {
+func (a *clientAuthService) Login(ctx context.Context, user models.User) (int64, []byte, error) {
 	// L2: получаем encryption_salt с сервера по логину
 	userWithSalt, err := a.adapter.RequestSalt(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrLoginOnServer, err)
+		return 0, nil, fmt.Errorf("%w: %v", ErrLoginOnServer, err)
 	}
 
 	// L3: декодируем соль и вычисляем KEK из пароля + соли
 	saltBytes, err := base64.StdEncoding.DecodeString(userWithSalt.EncryptionSalt)
 	if err != nil {
-		return nil, fmt.Errorf("decode encryption salt: %w", err)
+		return 0, nil, fmt.Errorf("decode encryption salt: %w", err)
 	}
 	kek := a.crypto.GenerateKEK(user.MasterPassword, saltBytes)
 
@@ -80,21 +80,19 @@ func (a *clientAuthService) Login(ctx context.Context, user models.User) ([]byte
 	// L5: отправляем login + auth_hash, получаем encrypted_master_key
 	foundUser, err := a.adapter.Login(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrLoginOnServer, err)
+		return 0, nil, fmt.Errorf("%w: %v", ErrLoginOnServer, err)
 	}
 
 	// L6: декодируем encrypted_master_key и расшифровываем DEK с помощью KEK
 	encryptedBlob, err := base64.StdEncoding.DecodeString(foundUser.EncryptedMasterKey)
 	if err != nil {
-		return nil, fmt.Errorf("decode encrypted master key: %w", err)
+		return 0, nil, fmt.Errorf("decode encrypted master key: %w", err)
 	}
 
 	dek, err := a.crypto.DecryptDEK(encryptedBlob, kek)
 	if err != nil {
-		return nil, fmt.Errorf("decrypt DEK: %w", err)
+		return 0, nil, fmt.Errorf("decrypt DEK: %w", err)
 	}
 
-	a.clientCryptoService.SetEncryptionKey(dek)
-
-	return dek, nil
+	return foundUser.UserID, dek, nil
 }

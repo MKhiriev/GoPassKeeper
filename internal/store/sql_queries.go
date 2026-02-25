@@ -13,12 +13,12 @@ import (
 
 const (
 	createUser = `
-		INSERT INTO users (login, auth_hash, master_password_hint, name) 
-    	VALUES ($1, $2, $3, $4) 
-    	RETURNING user_id, login, auth_hash, master_password_hint, name, created_at;`
+		INSERT INTO users (login, auth_hash, master_password_hint, name, encryption_salt, encrypted_master_key) 
+    	VALUES ($1, $2, $3, $4, $5, $6) 
+    	RETURNING user_id, login, auth_hash, master_password_hint, name, created_at, encryption_salt, encrypted_master_key;`
 
 	findUserByLogin = `
-		SELECT user_id, login, auth_hash, master_password_hint, name, created_at 
+		SELECT user_id, login, auth_hash, master_password_hint, name, created_at, encryption_salt, encrypted_master_key
     	FROM users 
     	WHERE login = $1;`
 

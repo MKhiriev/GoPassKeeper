@@ -102,7 +102,6 @@ func (a *authService) Login(ctx context.Context, user models.User) (models.User,
 		return models.User{}, ErrInvalidDataProvided
 	}
 
-	//a.hashPassword(&user)
 	foundUser, err := a.userRepository.FindUserByLogin(ctx, user)
 	if err != nil {
 		log.Err(err).Any("user", user).Msg("user search by login failed")
@@ -113,8 +112,27 @@ func (a *authService) Login(ctx context.Context, user models.User) (models.User,
 		log.Err(err).
 			Int64("id", foundUser.UserID).
 			Str("login", foundUser.Login).
+			Str("foundUser.AuthHash", foundUser.AuthHash).
+			Str("user.AuthHash", user.AuthHash).
 			Msg("wrong password")
 		return models.User{}, ErrWrongPassword
+	}
+
+	return foundUser, nil
+}
+
+func (a *authService) Params(ctx context.Context, user models.User) (models.User, error) {
+	log := logger.FromContext(ctx)
+
+	if user.Login == "" {
+		log.Error().Any("user", user).Msg("invalid user data provided")
+		return models.User{}, ErrInvalidDataProvided
+	}
+
+	foundUser, err := a.userRepository.FindUserByLogin(ctx, user)
+	if err != nil {
+		log.Err(err).Any("user", user).Msg("user search by login failed")
+		return models.User{}, fmt.Errorf("user search by login failed: %w", err)
 	}
 
 	return foundUser, nil

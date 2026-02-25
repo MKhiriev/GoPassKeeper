@@ -104,6 +104,9 @@ type AuthService interface {
 	// invalid or the user does not exist.
 	Login(ctx context.Context, user models.User) (models.User, error)
 
+	// Params used to get user encryption salt
+	Params(ctx context.Context, user models.User) (models.User, error)
+
 	// CreateToken issues a signed JWT for the given user.
 	// Returns the token model containing the raw token string and its claims,
 	// or an error if token generation fails.

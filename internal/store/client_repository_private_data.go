@@ -54,8 +54,10 @@ func (l *localPrivateDataRepository) SavePrivateData(ctx context.Context, userID
 func (l *localPrivateDataRepository) GetPrivateData(ctx context.Context, clientSideID string, userID int64) (models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
-	rows, err := l.DB.QueryContext(ctx, getSinglePrivateData, userID, clientSideID)
-	if err != nil {
+	var item models.PrivateData
+	row := l.DB.QueryRowContext(ctx, getSinglePrivateData, userID, clientSideID)
+	if row.Err() != nil {
+		err := row.Err()
 		log.Err(err).
 			Str("func", "privateDataRepository.GetPrivateData").
 			Int64("user_id", userID).
@@ -63,11 +65,8 @@ func (l *localPrivateDataRepository) GetPrivateData(ctx context.Context, clientS
 			Msg("failed to execute query for getting requested private data")
 		return models.PrivateData{}, fmt.Errorf("failed to query requested private data: %w", err)
 	}
-	defer rows.Close()
 
-	var item models.PrivateData
-
-	scanErr := rows.Scan(
+	scanErr := row.Scan(
 		&item.UserID,
 		&item.Payload.Type,
 		&item.Payload.Metadata,
@@ -87,14 +86,6 @@ func (l *localPrivateDataRepository) GetPrivateData(ctx context.Context, clientS
 			Int64("user_id", userID).
 			Msg("failed to scan private data row")
 		return models.PrivateData{}, fmt.Errorf("failed to scan private data row: %w", scanErr)
-	}
-
-	if rowsErr := rows.Err(); rowsErr != nil {
-		log.Err(rowsErr).
-			Str("func", "privateDataRepository.GetPrivateData").
-			Int64("user_id", userID).
-			Msg("error occurred during rows iteration")
-		return models.PrivateData{}, fmt.Errorf("error iterating private data rows: %w", rowsErr)
 	}
 
 	return item, nil

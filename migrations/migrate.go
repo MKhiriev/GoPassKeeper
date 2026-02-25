@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"strings"
 
 	"github.com/pressly/goose/v3"
 )
@@ -17,7 +18,7 @@ import (
 // This ensures migrations are always available regardless of the working directory
 // or deployment environment.
 //
-//go:embed *.sql
+//go:embed *.sql sqlite/*.sql
 var embedMigrations embed.FS
 
 // Migrate applies all pending database migrations using the goose library.
@@ -48,13 +49,22 @@ func Migrate(db *sql.DB) error {
 
 	goose.SetBaseFS(embedMigrations)
 
-	if err := goose.SetDialect("pgx"); err != nil {
+	dialect, dir := resolveDialectAndDir(db)
+	if err := goose.SetDialect(dialect); err != nil {
 		return fmt.Errorf("migration error setting dialect for db: %w", err)
 	}
 
-	if err := goose.Up(db, "."); err != nil {
+	if err := goose.Up(db, dir); err != nil {
 		return fmt.Errorf("migration error: %w", err)
 	}
 
 	return nil
+}
+
+func resolveDialectAndDir(db *sql.DB) (dialect, dir string) {
+	driverType := fmt.Sprintf("%T", db.Driver())
+	if strings.Contains(strings.ToLower(driverType), "sqlite") {
+		return "sqlite3", "sqlite"
+	}
+	return "pgx", "."
 }
