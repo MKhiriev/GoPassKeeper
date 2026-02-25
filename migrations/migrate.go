@@ -18,7 +18,7 @@ import (
 // This ensures migrations are always available regardless of the working directory
 // or deployment environment.
 //
-//go:embed *.sql
+//go:embed *.sql sqlite/*.sql
 var embedMigrations embed.FS
 
 // Migrate applies all pending database migrations using the goose library.
