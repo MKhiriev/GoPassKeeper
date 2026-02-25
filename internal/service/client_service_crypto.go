@@ -1,163 +1,127 @@
 package service
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"errors"
 	"fmt"
-	"strconv"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/crypto"
+	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
-type clientCryptoService struct{}
-
-func NewClientCryptoService() ClientCryptoService {
-	return &clientCryptoService{}
+type clientCryptoService struct {
+	key    []byte // DEK — set after successful login via SetEncryptionKey
+	crypto crypto.KeyChainService
 }
 
-func (c *clientCryptoService) DeriveKey(masterPassword string, userID int64) []byte {
-	seed := []byte(masterPassword + ":" + strconv.FormatInt(userID, 10))
-	sum := sha256.Sum256(seed)
-	buf := sum[:]
-	for i := 0; i < 4096; i++ {
-		tmp := sha256.Sum256(buf)
-		buf = tmp[:]
-	}
-	out := make([]byte, 32)
-	copy(out, buf)
-	return out
+func NewClientCryptoService(crypto crypto.KeyChainService) ClientCryptoService {
+	return &clientCryptoService{crypto: crypto}
 }
 
-func (c *clientCryptoService) EncryptPayload(plain models.PrivateDataPayload, key []byte) (models.PrivateDataPayload, error) {
-	encMeta, err := encryptString(string(plain.Metadata), key)
+func (c *clientCryptoService) SetEncryptionKey(key []byte) {
+	c.key = key
+}
+
+// dataPayload bundles all typed data fields into a single value before encryption.
+// Only one field will be non-nil depending on the DataType.
+type dataPayload struct {
+	LoginData    *models.LoginData    `json:"login_data,omitempty"`
+	LoginURI     *models.LoginURI     `json:"login_uri,omitempty"`
+	TextData     *models.TextData     `json:"text_data,omitempty"`
+	BinaryData   *models.BinaryData   `json:"binary_data,omitempty"`
+	BankCardData *models.BankCardData `json:"bank_card_data,omitempty"`
+}
+
+func (c *clientCryptoService) EncryptPayload(plain models.DecipheredPayload) (models.PrivateDataPayload, error) {
+	// --- Metadata ---
+	encMeta, err := c.crypto.EncryptData(plain.Metadata, c.key)
 	if err != nil {
 		return models.PrivateDataPayload{}, fmt.Errorf("encrypt metadata: %w", err)
 	}
-	encData, err := encryptString(string(plain.Data), key)
+
+	// --- Data: bundle all typed fields into one struct, then encrypt ---
+	dp := dataPayload{
+		LoginData:    plain.LoginData,
+		LoginURI:     plain.LoginURI,
+		TextData:     plain.TextData,
+		BinaryData:   plain.BinaryData,
+		BankCardData: plain.BankCardData,
+	}
+	encData, err := c.crypto.EncryptData(dp, c.key)
 	if err != nil {
 		return models.PrivateDataPayload{}, fmt.Errorf("encrypt data: %w", err)
 	}
 
-	out := models.PrivateDataPayload{Metadata: models.CipheredMetadata(encMeta), Type: plain.Type, Data: models.CipheredData(encData)}
+	out := models.PrivateDataPayload{
+		Metadata: models.CipheredMetadata(encMeta),
+		Type:     plain.Type, // Type is NOT encrypted — plain int
+		Data:     models.CipheredData(encData),
+	}
+
+	// --- Notes (optional) ---
 	if plain.Notes != nil {
-		encNotes, err := encryptString(string(*plain.Notes), key)
+		encNotes, err := c.crypto.EncryptData(plain.Notes, c.key)
 		if err != nil {
 			return models.PrivateDataPayload{}, fmt.Errorf("encrypt notes: %w", err)
 		}
-		n := models.CipheredNotes(encNotes)
-		out.Notes = &n
+		out.Notes = (*models.CipheredNotes)(&encNotes)
 	}
+
+	// --- AdditionalFields (optional) ---
 	if plain.AdditionalFields != nil {
-		encFields, err := encryptString(string(*plain.AdditionalFields), key)
+		encFields, err := c.crypto.EncryptData(plain.AdditionalFields, c.key)
 		if err != nil {
 			return models.PrivateDataPayload{}, fmt.Errorf("encrypt additional fields: %w", err)
 		}
-		f := models.CipheredCustomFields(encFields)
-		out.AdditionalFields = &f
-	}
-	return out, nil
-}
-
-func (c *clientCryptoService) DecryptPayload(cipherPayload models.PrivateDataPayload, key []byte) (models.PrivateDataPayload, error) {
-	plainMeta, err := decryptString(string(cipherPayload.Metadata), key)
-	if err != nil {
-		return models.PrivateDataPayload{}, fmt.Errorf("decrypt metadata: %w", err)
-	}
-	plainData, err := decryptString(string(cipherPayload.Data), key)
-	if err != nil {
-		return models.PrivateDataPayload{}, fmt.Errorf("decrypt data: %w", err)
-	}
-
-	out := models.PrivateDataPayload{Metadata: models.CipheredMetadata(plainMeta), Type: cipherPayload.Type, Data: models.CipheredData(plainData)}
-	if cipherPayload.Notes != nil {
-		plainNotes, err := decryptString(string(*cipherPayload.Notes), key)
-		if err != nil {
-			return models.PrivateDataPayload{}, fmt.Errorf("decrypt notes: %w", err)
-		}
-		n := models.CipheredNotes(plainNotes)
-		out.Notes = &n
-	}
-	if cipherPayload.AdditionalFields != nil {
-		plainFields, err := decryptString(string(*cipherPayload.AdditionalFields), key)
-		if err != nil {
-			return models.PrivateDataPayload{}, fmt.Errorf("decrypt additional fields: %w", err)
-		}
-		f := models.CipheredCustomFields(plainFields)
-		out.AdditionalFields = &f
+		out.AdditionalFields = (*models.CipheredCustomFields)(&encFields)
 	}
 
 	return out, nil
 }
 
-func (c *clientCryptoService) ComputeHash(payload models.PrivateDataPayload) string {
-	h := sha256.New()
-	h.Write([]byte(payload.Metadata))
-	h.Write([]byte(strconv.FormatInt(int64(payload.Type), 10)))
-	h.Write([]byte(payload.Data))
-	if payload.Notes != nil {
-		h.Write([]byte(*payload.Notes))
+func (c *clientCryptoService) DecryptPayload(enc models.PrivateDataPayload) (models.DecipheredPayload, error) {
+	// --- Metadata ---
+	var meta models.Metadata
+	if err := c.crypto.DecryptData(string(enc.Metadata), c.key, &meta); err != nil {
+		return models.DecipheredPayload{}, fmt.Errorf("decrypt metadata: %w", err)
 	}
-	if payload.AdditionalFields != nil {
-		h.Write([]byte(*payload.AdditionalFields))
+
+	// --- Data ---
+	var dp dataPayload
+	if err := c.crypto.DecryptData(string(enc.Data), c.key, &dp); err != nil {
+		return models.DecipheredPayload{}, fmt.Errorf("decrypt data: %w", err)
 	}
-	return hex.EncodeToString(h.Sum(nil))
+
+	out := models.DecipheredPayload{
+		Metadata:     meta,
+		Type:         enc.Type, // Type is NOT encrypted — plain int
+		LoginData:    dp.LoginData,
+		LoginURI:     dp.LoginURI,
+		TextData:     dp.TextData,
+		BinaryData:   dp.BinaryData,
+		BankCardData: dp.BankCardData,
+	}
+
+	// --- Notes (optional) ---
+	if enc.Notes != nil {
+		var notes models.Notes
+		if err := c.crypto.DecryptData(string(*enc.Notes), c.key, &notes); err != nil {
+			return models.DecipheredPayload{}, fmt.Errorf("decrypt notes: %w", err)
+		}
+		out.Notes = &notes
+	}
+
+	// --- AdditionalFields (optional) ---
+	if enc.AdditionalFields != nil {
+		var fields []models.CustomField
+		if err := c.crypto.DecryptData(string(*enc.AdditionalFields), c.key, &fields); err != nil {
+			return models.DecipheredPayload{}, fmt.Errorf("decrypt additional fields: %w", err)
+		}
+		out.AdditionalFields = &fields
+	}
+
+	return out, nil
 }
 
-func encryptString(value string, key []byte) (string, error) {
-	if len(key) != 32 {
-		return "", fmt.Errorf("invalid key length: %d", len(key))
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = rand.Read(nonce); err != nil {
-		return "", err
-	}
-
-	ct := gcm.Seal(nil, nonce, []byte(value), nil)
-	blob := append(nonce, ct...)
-	return base64.StdEncoding.EncodeToString(blob), nil
-}
-
-func decryptString(value string, key []byte) (string, error) {
-	if len(key) != 32 {
-		return "", fmt.Errorf("invalid key length: %d", len(key))
-	}
-	blob, err := base64.StdEncoding.DecodeString(value)
-	if err != nil {
-		return "", err
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-
-	nonceSize := gcm.NonceSize()
-	if len(blob) < nonceSize {
-		return "", errors.New("ciphertext too short")
-	}
-
-	nonce, ct := blob[:nonceSize], blob[nonceSize:]
-	pt, err := gcm.Open(nil, nonce, ct, nil)
-	if err != nil {
-		return "", err
-	}
-	return string(pt), nil
+func (c *clientCryptoService) ComputeHash(payload any) (string, error) {
+	return utils.HashJSONToString(payload)
 }

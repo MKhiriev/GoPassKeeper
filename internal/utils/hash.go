@@ -4,6 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"hash"
 	"sync"
 )
@@ -113,4 +115,13 @@ func hashString(data []byte, hashKey string) []byte {
 	hasher := hmac.New(sha256.New, []byte(hashKey))
 	hasher.Write(data)
 	return hasher.Sum(nil)
+}
+
+func HashJSONToString(data any) (string, error) {
+	plaintext, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("marshal data: %w", err)
+	}
+
+	return hex.EncodeToString(Hash(plaintext)), nil
 }

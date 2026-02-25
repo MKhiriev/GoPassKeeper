@@ -47,7 +47,7 @@ func TestCreateUser_Success(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.
-		NewRows([]string{"user_id", "login", "master_password", "master_password_hint", "name", "created_at"}).
+		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at"}).
 		AddRow(1, user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name, now)
 
 	mock.ExpectQuery("INSERT INTO users").
@@ -129,7 +129,7 @@ func TestFindUserByLogin_Success(t *testing.T) {
 
 	now := time.Now()
 	rows := sqlmock.
-		NewRows([]string{"user_id", "login", "master_password", "master_password_hint", "name", "created_at"}).
+		NewRows([]string{"user_id", "login", "auth_hash", "master_password_hint", "name", "created_at"}).
 		AddRow(1, "john", "hash", "hint", "John", now)
 
 	mock.ExpectQuery("SELECT user_id").

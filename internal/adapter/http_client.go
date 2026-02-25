@@ -2,66 +2,45 @@ package adapter
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
+	"github.com/MKhiriev/go-pass-keeper/internal/utils"
 	"github.com/MKhiriev/go-pass-keeper/models"
 	"github.com/go-resty/resty/v2"
-	"github.com/golang-jwt/jwt/v5"
 )
-
-var (
-	ErrUnauthorized    = errors.New("client unauthorized")
-	ErrVersionConflict = errors.New("version conflict")
-)
-
-type HTTPClientConfig struct {
-	BaseURL string
-	HashKey string
-	Timeout time.Duration
-}
 
 type httpServerAdapter struct {
-	client  *resty.Client
-	hashKey string
+	client *utils.HTTPClient
 
-	mu    sync.RWMutex
-	token string
+	hashKey string
+	token   string
+
+	logger *logger.Logger
 }
 
-func NewHTTPServerAdapter(cfg HTTPClientConfig) ServerAdapter {
-	if cfg.BaseURL == "" {
-		cfg.BaseURL = "http://localhost:8080"
-	}
-	if cfg.Timeout <= 0 {
-		cfg.Timeout = 15 * time.Second
-	}
+func NewHTTPServerAdapter(adapterCfg config.ClientAdapter, appCfg config.ClientApp, logger *logger.Logger) (ServerAdapter, error) {
+	client := utils.NewHTTPClient()
 
-	cli := resty.New().
-		SetBaseURL(strings.TrimRight(cfg.BaseURL, "/")).
-		SetTimeout(cfg.Timeout)
+	client.
+		SetBaseURL(adapterCfg.HTTPAddress).
+		SetTimeout(adapterCfg.RequestTimeout)
 
-	return &httpServerAdapter{client: cli, hashKey: cfg.HashKey}
+	utils.InitHasherPool(appCfg.HashKey)
+
+	return &httpServerAdapter{client: client, hashKey: appCfg.HashKey, logger: logger}, nil
 }
 
 func (h *httpServerAdapter) SetToken(token string) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	h.token = strings.TrimSpace(token)
 }
 
 func (h *httpServerAdapter) Token() string {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
 	return h.token
 }
 
@@ -78,11 +57,11 @@ func (h *httpServerAdapter) Register(ctx context.Context, user models.User) (mod
 		return models.User{}, err
 	}
 
-	token, err := parseBearerToken(resp.Header().Get("Authorization"))
+	token, err := utils.ParseBearerToken(resp.Header().Get("Authorization"))
 	if err != nil {
 		return models.User{}, fmt.Errorf("register parse bearer token: %w", err)
 	}
-	userID, err := parseUserIDFromJWT(token)
+	userID, err := utils.ParseUserIDFromJWT(token)
 	if err != nil {
 		return models.User{}, fmt.Errorf("register parse user id: %w", err)
 	}
@@ -91,34 +70,54 @@ func (h *httpServerAdapter) Register(ctx context.Context, user models.User) (mod
 	return models.User{UserID: userID, Login: user.Login, Name: user.Name}, nil
 }
 
-func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models.Token, error) {
+func (h *httpServerAdapter) RequestSalt(ctx context.Context, user models.User) (models.User, error) {
+	var foundUser models.User // only login and encryption salt
+
 	resp, err := h.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(user).
-		Post("/api/auth/login")
+		SetResult(foundUser).
+		Post("/api/auth/params")
+
 	if err != nil {
-		return models.Token{}, fmt.Errorf("login request: %w", err)
+		return user, fmt.Errorf("request request: %w", err)
 	}
 	if err = mapHTTPError(resp); err != nil {
-		return models.Token{}, err
+		return user, err
 	}
 
-	token, err := parseBearerToken(resp.Header().Get("Authorization"))
+	return foundUser, nil
+}
+
+func (h *httpServerAdapter) Login(ctx context.Context, user models.User) (models.User, error) {
+	var foundUser models.User
+
+	resp, err := h.client.R().
+		SetContext(ctx).
+		SetHeader("Content-Type", "application/json").
+		SetBody(user).
+		SetResult(foundUser).
+		Post("/api/auth/login")
+
 	if err != nil {
-		return models.Token{}, fmt.Errorf("login parse bearer token: %w", err)
+		return user, fmt.Errorf("login request: %w", err)
 	}
-	userID, err := parseUserIDFromJWT(token)
+	if err = mapHTTPError(resp); err != nil {
+		return user, err
+	}
+
+	token, err := utils.ParseBearerToken(resp.Header().Get("Authorization"))
 	if err != nil {
-		return models.Token{}, fmt.Errorf("login parse user id: %w", err)
+		return user, fmt.Errorf("login parse bearer token: %w", err)
 	}
 
 	h.SetToken(token)
-	return models.Token{SignedString: token, UserID: userID}, nil
+	return foundUser, nil
 }
 
 func (h *httpServerAdapter) Upload(ctx context.Context, req models.UploadRequest) error {
-	req.Hash = computeTransportHash(req.PrivateDataList, h.hashKey)
+	req.Hash = computeTransportHash(req.PrivateDataList)
 	req.Length = len(req.PrivateDataList)
 
 	resp, err := h.authedRequest(ctx).
@@ -155,7 +154,7 @@ func (h *httpServerAdapter) Download(ctx context.Context, req models.DownloadReq
 }
 
 func (h *httpServerAdapter) Update(ctx context.Context, req models.UpdateRequest) error {
-	req.Hash = computeTransportHash(req.PrivateDataUpdates, h.hashKey)
+	req.Hash = computeTransportHash(req.PrivateDataUpdates)
 	req.Length = len(req.PrivateDataUpdates)
 
 	resp, err := h.authedRequest(ctx).
@@ -227,46 +226,11 @@ func mapHTTPError(resp *resty.Response) error {
 	return fmt.Errorf("http %d: %s", resp.StatusCode(), body)
 }
 
-func parseBearerToken(value string) (string, error) {
-	parts := strings.Split(strings.TrimSpace(value), " ")
-	if len(parts) != 2 || parts[1] == "" {
-		return "", errors.New("invalid authorization header")
-	}
-	return parts[1], nil
-}
-
-func parseUserIDFromJWT(tokenString string) (int64, error) {
-	token, _, err := jwt.NewParser().ParseUnverified(tokenString, jwt.MapClaims{})
-	if err != nil {
-		return 0, err
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, errors.New("invalid token claims")
-	}
-
-	sub, err := claims.GetSubject()
-	if err != nil {
-		return 0, err
-	}
-
-	id, err := strconv.ParseInt(sub, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
-}
-
-func computeTransportHash(v any, key string) string {
-	if key == "" {
-		return ""
-	}
+func computeTransportHash(v any) string {
 	payload, err := json.Marshal(v)
 	if err != nil {
 		return ""
 	}
-	h := hmac.New(sha256.New, []byte(key))
-	h.Write(payload)
-	return hex.EncodeToString(h.Sum(nil))
+
+	return hex.EncodeToString(utils.Hash(payload))
 }

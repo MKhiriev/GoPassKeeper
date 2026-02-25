@@ -244,3 +244,38 @@ func (l *localPrivateDataRepository) DeletePrivateData(ctx context.Context, clie
 
 	return nil
 }
+
+func (l *localPrivateDataRepository) IncrementVersion(ctx context.Context, clientSideID string, userID int64) error {
+	log := logger.FromContext(ctx)
+
+	result, err := l.DB.ExecContext(ctx, incrementVersion, clientSideID, userID)
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.IncrementVersion").
+			Int64("user_id", userID).
+			Str("client_side_id", clientSideID).
+			Msg("failed to execute increment version for private data")
+		return fmt.Errorf("failed to increment version (client_side_id=%s): %w", clientSideID, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Err(err).
+			Str("func", "privateDataRepository.IncrementVersion").
+			Int64("user_id", userID).
+			Str("client_side_id", clientSideID).
+			Msg("failed to get rows affected after increment version")
+		return fmt.Errorf("failed to get rows affected (client_side_id=%s): %w", clientSideID, err)
+	}
+
+	if rowsAffected == 0 {
+		log.Warn().
+			Str("func", "privateDataRepository.IncrementVersion").
+			Int64("user_id", userID).
+			Str("client_side_id", clientSideID).
+			Msg("no rows affected during increment version: record not found")
+		return fmt.Errorf("failed to increment version: record not found (client_side_id=%s, user_id=%d)", clientSideID, userID)
+	}
+
+	return nil
+}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/MKhiriev/go-pass-keeper/internal/adapter"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
@@ -12,20 +11,16 @@ import (
 )
 
 type clientSyncService struct {
-	localStore store.LocalStorage
+	localStore *store.ClientStorages
 	adapter    adapter.ServerAdapter
 	planner    SyncService
-
-	mu          sync.RWMutex
-	serverState map[string]models.PrivateDataState
 }
 
-func NewClientSyncService(localStore store.LocalStorage, serverAdapter adapter.ServerAdapter) ClientSyncService {
+func NewClientSyncService(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter) ClientSyncService {
 	return &clientSyncService{
-		localStore:  localStore,
-		adapter:     serverAdapter,
-		planner:     NewSyncService(),
-		serverState: make(map[string]models.PrivateDataState),
+		localStore: localStore,
+		adapter:    serverAdapter,
+		planner:    NewSyncService(),
 	}
 }
 
@@ -35,7 +30,7 @@ func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
 		return fmt.Errorf("get server states: %w", err)
 	}
 
-	clientStates, err := s.localStore.GetAllStates(ctx, userID)
+	clientStates, err := s.localStore.PrivateDataRepository.GetAllStates(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get local states: %w", err)
 	}
@@ -49,63 +44,41 @@ func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
 	for _, st := range serverStates {
 		idx[st.ClientSideID] = st
 	}
-	s.mu.Lock()
-	s.serverState = idx
-	s.mu.Unlock()
 
-	if err = s.ExecutePlan(ctx, plan); err != nil {
+	if err = s.ExecutePlan(ctx, plan, userID); err != nil {
 		return fmt.Errorf("execute sync plan: %w", err)
 	}
 
 	return nil
 }
 
-func (s *clientSyncService) ExecutePlan(ctx context.Context, plan models.SyncPlan) error {
+func (s *clientSyncService) ExecutePlan(ctx context.Context, plan models.SyncPlan, userID int64) error {
 	if len(plan.Download) > 0 {
-		ids := collectIDs(plan.Download)
-		items, err := s.adapter.Download(ctx, models.DownloadRequest{ClientSideIDs: ids, Length: len(ids)})
-		if err != nil {
-			return fmt.Errorf("download states in plan: %w", err)
-		}
-		batch := make([]*models.PrivateData, 0, len(items))
-		for i := range items {
-			item := items[i]
-			batch = append(batch, &item)
-		}
-		if err = s.localStore.Save(ctx, batch...); err != nil {
-			return fmt.Errorf("save downloaded items locally: %w", err)
+		if err := s.downloadFromServer(ctx, plan, userID); err != nil {
+			return err
 		}
 	}
 
 	if len(plan.Upload) > 0 {
-		payload := make([]*models.PrivateData, 0, len(plan.Upload))
-		for _, st := range plan.Upload {
-			item, err := s.localStore.Get(ctx, st.ClientSideID)
-			if err != nil {
-				return fmt.Errorf("get local upload item %s: %w", st.ClientSideID, err)
-			}
-			it := item
-			payload = append(payload, &it)
-		}
-		if err := s.adapter.Upload(ctx, models.UploadRequest{PrivateDataList: payload, Length: len(payload)}); err != nil {
-			return fmt.Errorf("upload items in sync plan: %w", err)
+		if err := s.uploadToServer(ctx, plan, userID); err != nil {
+			return err
 		}
 	}
 
 	for _, st := range plan.Update {
-		if err := s.updateServer(ctx, st.ClientSideID); err != nil {
+		if err := s.updateServerData(ctx, st.ClientSideID, userID); err != nil {
 			return err
 		}
 	}
 
 	for _, st := range plan.DeleteClient {
-		if err := s.localStore.SoftDelete(ctx, st.ClientSideID, st.Version); err != nil {
-			return fmt.Errorf("delete on client for %s: %w", st.ClientSideID, err)
+		if err := s.deleteFromClient(ctx, st.ClientSideID, st.Version); err != nil {
+			return err
 		}
 	}
 
 	for _, st := range plan.DeleteServer {
-		if err := s.deleteServer(ctx, st.ClientSideID); err != nil {
+		if err := s.deleteFromServer(ctx, st.ClientSideID, userID); err != nil {
 			return err
 		}
 	}
@@ -113,20 +86,57 @@ func (s *clientSyncService) ExecutePlan(ctx context.Context, plan models.SyncPla
 	return nil
 }
 
-func (s *clientSyncService) updateServer(ctx context.Context, clientSideID string) error {
-	item, err := s.localStore.Get(ctx, clientSideID)
+func (s *clientSyncService) downloadFromServer(ctx context.Context, plan models.SyncPlan, userID int64) error {
+	ids := collectIDs(plan.Download)
+
+	downloadedData, err := s.adapter.Download(ctx, models.DownloadRequest{
+		ClientSideIDs: ids,
+		Length:        len(ids),
+	})
+	if err != nil {
+		return fmt.Errorf("error sync downloading data from server: %w", err)
+	}
+
+	if err = s.localStore.PrivateDataRepository.SavePrivateData(ctx, userID, downloadedData...); err != nil {
+		return fmt.Errorf("error saving downloaded items locally: %w", err)
+	}
+
+	return nil
+}
+
+func (s *clientSyncService) uploadToServer(ctx context.Context, plan models.SyncPlan, userID int64) error {
+	payload := make([]*models.PrivateData, 0, len(plan.Upload))
+
+	for _, st := range plan.Upload {
+		item, err := s.localStore.PrivateDataRepository.GetPrivateData(ctx, st.ClientSideID, userID)
+		if err != nil {
+			return fmt.Errorf("error getting client item for upload %s: %w", st.ClientSideID, err)
+		}
+
+		it := item
+		payload = append(payload, &it)
+	}
+
+	if err := s.adapter.Upload(ctx, models.UploadRequest{PrivateDataList: payload, Length: len(payload)}); err != nil {
+		return fmt.Errorf("upload items in sync plan: %w", err)
+	}
+
+	return nil
+}
+
+func (s *clientSyncService) updateServerData(ctx context.Context, clientSideID string, userID int64) error {
+	item, err := s.localStore.PrivateDataRepository.GetPrivateData(ctx, clientSideID, userID)
 	if err != nil {
 		return fmt.Errorf("load local item for update %s: %w", clientSideID, err)
 	}
 
 	meta := item.Payload.Metadata
 	data := item.Payload.Data
-	baseVersion := s.serverVersion(clientSideID, item.Version)
 	req := models.UpdateRequest{
 		UserID: item.UserID,
 		PrivateDataUpdates: []models.PrivateDataUpdate{{
 			ClientSideID:      item.ClientSideID,
-			Version:           baseVersion,
+			Version:           item.Version,
 			UpdatedRecordHash: item.Hash,
 			FieldsUpdate: models.FieldsUpdate{
 				Metadata:         &meta,
@@ -148,15 +158,23 @@ func (s *clientSyncService) updateServer(ctx context.Context, clientSideID strin
 	return s.refreshConflict(ctx, item.UserID, clientSideID)
 }
 
-func (s *clientSyncService) deleteServer(ctx context.Context, clientSideID string) error {
-	item, err := s.localStore.Get(ctx, clientSideID)
+func (s *clientSyncService) deleteFromClient(ctx context.Context, clientSideID string, version int64) error {
+	if err := s.localStore.PrivateDataRepository.DeletePrivateData(ctx, clientSideID, version); err != nil {
+		return fmt.Errorf("delete on client for %s: %w", clientSideID, err)
+	}
+
+	return nil
+}
+
+func (s *clientSyncService) deleteFromServer(ctx context.Context, clientSideID string, userID int64) error {
+	item, err := s.localStore.PrivateDataRepository.GetPrivateData(ctx, clientSideID, userID)
 	if err != nil {
 		return fmt.Errorf("load local item for delete %s: %w", clientSideID, err)
 	}
 
 	req := models.DeleteRequest{UserID: item.UserID, DeleteEntries: []models.DeleteEntry{{
 		ClientSideID: clientSideID,
-		Version:      s.serverVersion(clientSideID, item.Version),
+		Version:      item.Version,
 	}}}
 
 	err = s.adapter.Delete(ctx, req)
@@ -180,28 +198,10 @@ func (s *clientSyncService) refreshConflict(ctx context.Context, userID int64, c
 		return nil
 	}
 
-	batch := make([]*models.PrivateData, 0, len(items))
-	for i := range items {
-		item := items[i]
-		batch = append(batch, &item)
-	}
-	if err = s.localStore.Save(ctx, batch...); err != nil {
+	if err = s.localStore.PrivateDataRepository.SavePrivateData(ctx, userID, items...); err != nil {
 		return fmt.Errorf("save conflict item %s: %w", clientSideID, err)
 	}
 	return nil
-}
-
-func (s *clientSyncService) serverVersion(clientSideID string, fallback int64) int64 {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if st, ok := s.serverState[clientSideID]; ok {
-		return st.Version
-	}
-	if fallback > 0 {
-		return fallback - 1
-	}
-	return 0
 }
 
 func collectIDs(states []models.PrivateDataState) []string {

@@ -13,12 +13,12 @@ import (
 
 const (
 	createUser = `
-		INSERT INTO users (login, master_password, master_password_hint, name) 
+		INSERT INTO users (login, auth_hash, master_password_hint, name) 
     	VALUES ($1, $2, $3, $4) 
-    	RETURNING user_id, login, master_password, master_password_hint, name, created_at;`
+    	RETURNING user_id, login, auth_hash, master_password_hint, name, created_at;`
 
 	findUserByLogin = `
-		SELECT user_id, login, master_password, master_password_hint, name, created_at 
+		SELECT user_id, login, auth_hash, master_password_hint, name, created_at 
     	FROM users 
     	WHERE login = $1;`
 
@@ -258,9 +258,9 @@ func buildUpdateQuery(ctx context.Context, update models.PrivateDataUpdate) (str
 // buildCreateUserQuery builds INSERT query with RETURNING clause
 func buildCreateUserQuery(ctx context.Context, user models.User) (string, []any, error) {
 	qb := psql.Insert("users").
-		Columns("login", "master_password", "master_password_hint", "name").
-		Values(user.Login, user.MasterPassword, user.MasterPasswordHint, user.Name).
-		Suffix("RETURNING user_id, login, master_password, master_password_hint, name, created_at")
+		Columns("login", "auth_hash", "master_password_hint", "name").
+		Values(user.Login, user.AuthHash, user.MasterPasswordHint, user.Name).
+		Suffix("RETURNING user_id, login, auth_hash, master_password_hint, name, created_at")
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -273,7 +273,7 @@ func buildCreateUserQuery(ctx context.Context, user models.User) (string, []any,
 
 // buildFindUserByLoginQuery builds SELECT query for finding user by login
 func buildFindUserByLoginQuery(ctx context.Context, login string) (string, []any, error) {
-	qb := psql.Select("user_id", "login", "master_password", "master_password_hint", "name", "created_at").
+	qb := psql.Select("user_id", "login", "auth_hash", "master_password_hint", "name", "created_at").
 		From("users").
 		Where(sq.Eq{"login": login})
 

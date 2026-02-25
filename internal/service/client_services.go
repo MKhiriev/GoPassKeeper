@@ -2,6 +2,8 @@ package service
 
 import (
 	"github.com/MKhiriev/go-pass-keeper/internal/adapter"
+	"github.com/MKhiriev/go-pass-keeper/internal/crypto"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
 )
 
@@ -13,9 +15,11 @@ type ClientServices struct {
 	SyncJob            ClientSyncJob
 }
 
-func NewClientServices(localStore store.LocalStorage, serverAdapter adapter.ServerAdapter) *ClientServices {
-	cryptoSvc := NewClientCryptoService()
-	authSvc := NewClientAuthService(localStore, serverAdapter, cryptoSvc)
+func NewClientServices(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter, logger *logger.Logger) (*ClientServices, error) {
+	keyChainService := crypto.NewKeyChainService()
+
+	cryptoSvc := NewClientCryptoService(keyChainService)
+	authSvc := NewClientAuthService(localStore, serverAdapter, keyChainService)
 	privateSvc := NewClientPrivateDataService(localStore, serverAdapter, cryptoSvc)
 	syncSvc := NewClientSyncService(localStore, serverAdapter)
 
@@ -25,5 +29,5 @@ func NewClientServices(localStore store.LocalStorage, serverAdapter adapter.Serv
 		PrivateDataService: privateSvc,
 		SyncService:        syncSvc,
 		SyncJob:            NewClientSyncJob(syncSvc),
-	}
+	}, nil
 }

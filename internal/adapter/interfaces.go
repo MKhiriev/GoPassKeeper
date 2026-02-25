@@ -12,7 +12,8 @@ type ServerAdapter interface {
 	Token() string
 
 	Register(ctx context.Context, user models.User) (models.User, error)
-	Login(ctx context.Context, user models.User) (models.Token, error)
+	RequestSalt(ctx context.Context, user models.User) (models.User, error)
+	Login(ctx context.Context, user models.User) (models.User, error)
 
 	Upload(ctx context.Context, req models.UploadRequest) error
 	Download(ctx context.Context, req models.DownloadRequest) ([]models.PrivateData, error)

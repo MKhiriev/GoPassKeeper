@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 )
 
@@ -20,14 +21,14 @@ type TUI struct {
 	syncSvc service.ClientSyncService
 }
 
-func New(authSvc service.ClientAuthService, dataSvc service.ClientPrivateDataService, syncSvc service.ClientSyncService) *TUI {
+func New(services *service.ClientServices, logger *logger.Logger) (*TUI, error) {
 	return &TUI{
 		reader:  bufio.NewReader(os.Stdin),
 		out:     os.Stdout,
-		authSvc: authSvc,
-		dataSvc: dataSvc,
-		syncSvc: syncSvc,
-	}
+		authSvc: services.AuthService,
+		dataSvc: services.PrivateDataService,
+		syncSvc: services.SyncService,
+	}, nil
 }
 
 func (t *TUI) readLine(prompt string) (string, error) {
@@ -49,6 +50,7 @@ func (t *TUI) LoginFlow(ctx context.Context) (int64, []byte, error) {
 	return t.showLoginScreen(ctx)
 }
 
+// TODO change
 func (t *TUI) UnlockWithMasterPassword(userID int64, derive func(string, int64) []byte) ([]byte, error) {
 	password, err := t.readLine("Master password: ")
 	if err != nil {

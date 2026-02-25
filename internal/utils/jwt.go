@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/MKhiriev/go-pass-keeper/models"
@@ -104,4 +105,35 @@ func ValidateAndParseJWTToken(tokenString, tokenSignKey, tokenIssuer string) (mo
 	}
 
 	return models.Token{Token: token, UserID: userID}, err
+}
+
+func ParseBearerToken(authorizationHeader string) (string, error) {
+	parts := strings.Split(strings.TrimSpace(authorizationHeader), " ")
+	if len(parts) != 2 || parts[1] == "" {
+		return "", errors.New("invalid authorization header")
+	}
+	return parts[1], nil
+}
+
+func ParseUserIDFromJWT(tokenString string) (int64, error) {
+	token, _, err := jwt.NewParser().ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, errors.New("invalid token claims")
+	}
+
+	sub, err := claims.GetSubject()
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }

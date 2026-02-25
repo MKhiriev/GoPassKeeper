@@ -18,6 +18,10 @@ type User struct {
 	// It is non-sensitive and may be shown in UI.
 	Name string `json:"name"`
 
+	// MasterPassword used only to hold data inside a client login process
+	// Never send it.
+	MasterPassword string `json:"-"`
+
 	// AuthHash is the client-side derived hash of the master password.
 	// The server uses it ONLY to verify identity during login.
 	// It is never used for encryption or key derivation on the server side.

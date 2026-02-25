@@ -2,41 +2,25 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/MKhiriev/go-pass-keeper/internal/adapter"
+	"github.com/MKhiriev/go-pass-keeper/internal/config"
+	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
-	"github.com/MKhiriev/go-pass-keeper/internal/store"
 	"github.com/MKhiriev/go-pass-keeper/internal/tui"
 )
 
 type App struct {
-	services *service.ClientServices
-	tui      *tui.TUI
+	services    *service.ClientServices
+	tui         *tui.TUI
+	syncJobTime time.Duration
 }
 
-func NewApp() (*App, error) {
-	serverURL := getenv("GOPASS_SERVER_URL", "http://localhost:8080")
-	dbPath := getenv("GOPASS_CLIENT_DB", ":memory:")
-	hashKey := os.Getenv("GOPASS_HASH_KEY")
+func NewApp(services *service.ClientServices, ui *tui.TUI, cfg config.ClientWorkers, logger *logger.Logger) (*App, error) {
 
-	localStore, err := store.NewLocalStorage(dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("create local storage: %w", err)
-	}
-
-	serverAdapter := adapter.NewHTTPServerAdapter(adapter.HTTPClientConfig{
-		BaseURL: serverURL,
-		HashKey: hashKey,
-	})
-
-	svcs := service.NewClientServices(localStore, serverAdapter)
-	ui := tui.New(svcs.AuthService, svcs.PrivateDataService, svcs.SyncService)
-
-	return &App{services: svcs, tui: ui}, nil
+	return &App{services: services, tui: ui, syncJobTime: cfg.SyncInterval}, nil
 }
 
 func (a *App) Run() error {
@@ -50,9 +34,6 @@ func (a *App) Run() error {
 
 	userID, _, err = a.services.AuthService.RestoreSession(ctx)
 	if err != nil {
-		if !errors.Is(err, store.ErrLocalSessionNotFound) {
-			return fmt.Errorf("restore session: %w", err)
-		}
 		userID, key, err = a.tui.LoginFlow(ctx)
 		if err != nil {
 			return err

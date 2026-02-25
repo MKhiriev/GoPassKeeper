@@ -79,4 +79,10 @@ const (
 			deleted    = true,
 			updated_at = now()
 		WHERE user_id = $1 AND client_side_id = $2;`
+
+	incrementVersion = `
+		UPDATE ciphers
+		SET version = version + 1
+		WHERE client_side_id = $1
+		  AND user_id = $2;`
 )

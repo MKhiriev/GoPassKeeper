@@ -5,6 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"golang.org/x/crypto/argon2"
@@ -31,7 +34,7 @@ func NewKeyChainService() KeyChainService {
 	}
 }
 
-func (k *keyChainService) GenerateSalt() ([]byte, error) {
+func (k *keyChainService) GenerateEncryptionSalt() ([]byte, error) {
 	salt := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, err
@@ -84,4 +87,102 @@ func (k *keyChainService) GenerateAuthHash(KEK []byte, authSalt string) []byte {
 	h.Write(KEK)
 	h.Write([]byte(authSalt)) // authSalt отделяет AuthHash от KEK (разное назначение)
 	return h.Sum(nil)
+}
+
+func (k *keyChainService) DecryptDEK(encryptedDEK, KEK []byte) ([]byte, error) {
+	block, err := aes.NewCipher(KEK)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(encryptedDEK) < nonceSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
+	// Split the blob into nonce and actual ciphertext
+	nonce, ciphertext := encryptedDEK[:nonceSize], encryptedDEK[nonceSize:]
+
+	// Decrypt and verify (Open returns an error if the KEK is wrong or data is corrupted)
+	dek, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		// This error usually means the user entered the WRONG PASSWORD,
+		// which resulted in a WRONG KEK.
+		return nil, fmt.Errorf("decryption failed: %w", err)
+	}
+
+	return dek, nil
+}
+
+func (k *keyChainService) EncryptData(data any, DEK []byte) (string, error) {
+	// 1. Serialize to JSON
+	plaintext, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("marshal data: %w", err)
+	}
+
+	// 2. Build AES-GCM cipher from DEK
+	block, err := aes.NewCipher(DEK)
+	if err != nil {
+		return "", fmt.Errorf("create cipher: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", fmt.Errorf("create gcm: %w", err)
+	}
+
+	// 3. Generate a random nonce
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", fmt.Errorf("generate nonce: %w", err)
+	}
+
+	// 4. Encrypt: nonce || ciphertext
+	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
+	blob := append(nonce, ciphertext...)
+
+	return base64.StdEncoding.EncodeToString(blob), nil
+}
+
+func (k *keyChainService) DecryptData(encryptedB64 string, DEK []byte, target any) error {
+	// 1. Decode base64 blob
+	blob, err := base64.StdEncoding.DecodeString(encryptedB64)
+	if err != nil {
+		return fmt.Errorf("decode base64: %w", err)
+	}
+
+	// 2. Build AES-GCM cipher from DEK
+	block, err := aes.NewCipher(DEK)
+	if err != nil {
+		return fmt.Errorf("create cipher: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return fmt.Errorf("create gcm: %w", err)
+	}
+
+	// 3. Split nonce and ciphertext
+	nonceSize := gcm.NonceSize()
+	if len(blob) < nonceSize {
+		return fmt.Errorf("ciphertext too short")
+	}
+	nonce, ciphertext := blob[:nonceSize], blob[nonceSize:]
+
+	// 4. Decrypt and verify auth tag
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return fmt.Errorf("decrypt data: %w", err)
+	}
+
+	// 5. Unmarshal JSON into target
+	if err := json.Unmarshal(plaintext, target); err != nil {
+		return fmt.Errorf("unmarshal data: %w", err)
+	}
+
+	return nil
 }

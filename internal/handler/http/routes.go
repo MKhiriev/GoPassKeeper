@@ -70,6 +70,7 @@ func (h *Handler) Init() *chi.Mux {
 			// Public endpoints — no JWT required.
 			auth.Post("/register", h.register)
 			auth.Post("/login", h.login)
+			auth.Post("/params", h.params)
 
 			// Protected settings endpoints — JWT required via h.auth.
 			auth.Route("/settings", func(settings chi.Router) {

@@ -10,13 +10,13 @@ import (
 func TestGenerateSalt_LengthAndRandomness(t *testing.T) {
 	svc := NewKeyChainService()
 
-	s1, err := svc.GenerateSalt()
+	s1, err := svc.GenerateEncryptionSalt()
 	if err != nil {
-		t.Fatalf("GenerateSalt error: %v", err)
+		t.Fatalf("GenerateEncryptionSalt error: %v", err)
 	}
-	s2, err := svc.GenerateSalt()
+	s2, err := svc.GenerateEncryptionSalt()
 	if err != nil {
-		t.Fatalf("GenerateSalt error: %v", err)
+		t.Fatalf("GenerateEncryptionSalt error: %v", err)
 	}
 
 	if len(s1) != 16 {

@@ -67,7 +67,7 @@ func NewAuthService(userRepository store.UserRepository, cfg config.App, logger 
 func (a *authService) RegisterUser(ctx context.Context, user models.User) (models.User, error) {
 	log := logger.FromContext(ctx)
 
-	if user.Login == "" || user.MasterPassword == "" {
+	if user.Login == "" || user.AuthHash == "" {
 		log.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
@@ -97,24 +97,22 @@ func (a *authService) RegisterUser(ctx context.Context, user models.User) (model
 func (a *authService) Login(ctx context.Context, user models.User) (models.User, error) {
 	log := logger.FromContext(ctx)
 
-	if user.Login == "" || user.MasterPassword == "" {
+	if user.Login == "" || user.AuthHash == "" {
 		log.Error().Any("user", user).Msg("invalid user data provided")
 		return models.User{}, ErrInvalidDataProvided
 	}
 
-	a.hashPassword(&user)
+	//a.hashPassword(&user)
 	foundUser, err := a.userRepository.FindUserByLogin(ctx, user)
 	if err != nil {
 		log.Err(err).Any("user", user).Msg("user search by login failed")
 		return models.User{}, fmt.Errorf("user search by login failed: %w", err)
 	}
 
-	if foundUser.MasterPassword != user.MasterPassword {
+	if foundUser.AuthHash != user.AuthHash {
 		log.Err(err).
 			Int64("id", foundUser.UserID).
 			Str("login", foundUser.Login).
-			Str("typed password", user.MasterPassword).
-			Str("actual password", foundUser.MasterPassword).
 			Msg("wrong password")
 		return models.User{}, ErrWrongPassword
 	}
@@ -159,5 +157,5 @@ func (a *authService) ParseToken(ctx context.Context, tokenString string) (model
 // HMAC-SHA256 hash computed using the service's hashKey.
 // The mutation is applied in-place via a pointer receiver.
 func (a *authService) hashPassword(user *models.User) {
-	user.MasterPassword = utils.HashString(user.MasterPassword, a.hashKey)
+	user.AuthHash = utils.HashString(user.AuthHash, a.hashKey)
 }

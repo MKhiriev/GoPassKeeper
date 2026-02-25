@@ -14,4 +14,5 @@ type LocalPrivateDataRepository interface {
 	GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error)
 	UpdatePrivateData(ctx context.Context, data models.PrivateData) error
 	DeletePrivateData(ctx context.Context, clientSideID string, userID int64) error
+	IncrementVersion(ctx context.Context, clientSideID string, userID int64) error
 }

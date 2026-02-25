@@ -56,3 +56,9 @@ var (
 	// required version field, which is needed for optimistic concurrency control.
 	ErrVersionIsNotSpecified = errors.New("version is not specified")
 )
+
+// client errors
+var (
+	ErrRegisterOnServer = errors.New("register user on server")
+	ErrLoginOnServer    = errors.New("login on server")
+)
