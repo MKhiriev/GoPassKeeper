@@ -11,6 +11,7 @@ import (
 
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 	"github.com/MKhiriev/go-pass-keeper/models"
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -32,14 +33,15 @@ type mainLoopModel struct {
 	userID   int64
 	debug    bool
 
-	items   []models.DecipheredPayload
-	idx     int
-	loading bool
-	syncing bool
-	status  string
-	errMsg  string
-	detail  bool
-	editing bool
+	items                 []models.DecipheredPayload
+	idx                   int
+	loading               bool
+	syncing               bool
+	status                string
+	errMsg                string
+	detail                bool
+	detailRevealSensitive bool
+	editing               bool
 
 	editInputs     []textinput.Model
 	editFocus      int
@@ -200,9 +202,38 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.detail {
+		item, ok := m.current()
+		if !ok {
+			m.detail = false
+			return m, nil
+		}
+
 		switch keyMsg.String() {
 		case "esc":
 			m.detail = false
+			m.detailRevealSensitive = false
+		case " ":
+			m.detailRevealSensitive = !m.detailRevealSensitive
+		case "e":
+			m.detail = false
+			m.detailRevealSensitive = false
+			m.startEdit(item)
+			return m, nil
+		case "ctrl+d":
+			m.detail = false
+			m.detailRevealSensitive = false
+			return m, m.cmdDelete(item.ClientSideID)
+		case "c":
+			text, ok := m.detailCopyValue(item)
+			if !ok {
+				m.status = "Нечего копировать"
+				return m, nil
+			}
+			if err := clipboard.WriteAll(text); err != nil {
+				m.errMsg = fmt.Sprintf("Ошибка копирования: %v", err)
+				return m, nil
+			}
+			m.status = "Скопировано"
 		}
 		return m, nil
 	}
@@ -232,6 +263,7 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = "Нет записей"
 			return m, nil
 		}
+		m.detailRevealSensitive = false
 		m.detail = true
 	case "e":
 		item, ok := m.current()
@@ -676,12 +708,8 @@ func (m mainLoopModel) View() string {
 			return renderPage("ПРОСМОТР ЗАПИСИ", "Запись не найдена", "esc: назад")
 		}
 
-		out := "Поле       │ Значение\n"
-		out += "───────────┼─────────────────────────────────────────\n"
-		out += "Название   │ " + item.Metadata.Name + "\n"
-		out += "Тип        │ " + dataTypeLabel(item.Type) + "\n"
-		out += "Папка      │ " + valueOrDash(item.Metadata.Folder) + "\n"
-		return renderPage("ПРОСМОТР ЗАПИСИ", strings.TrimRight(out, "\n"), "esc: назад")
+		title, out, hotKeys := m.viewDetail(item)
+		return renderPage(title, strings.TrimRight(out, "\n"), hotKeys)
 	}
 
 	out := ""
@@ -994,6 +1022,143 @@ func (m mainLoopModel) updateEditing(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.editInputs[m.editFocus], cmd = m.editInputs[m.editFocus].Update(msg)
 	return m, cmd
+}
+
+func (m mainLoopModel) viewDetail(item models.DecipheredPayload) (title, body, hotKeys string) {
+	var b strings.Builder
+
+	b.WriteString("[ ОСНОВНОЕ ]\n")
+	b.WriteString("Название  : " + item.Metadata.Name + "\n")
+	b.WriteString("Папка     : " + valueOrDash(item.Metadata.Folder) + "\n\n")
+
+	switch item.Type {
+	case models.LoginPassword:
+		title = "ЛОГИН: " + item.Metadata.Name
+		b.WriteString("[ ДАННЫЕ ]\n")
+		if item.LoginData != nil {
+			if item.LoginData.Username != "" {
+				b.WriteString("Логин     : " + item.LoginData.Username + "\n")
+			}
+			if item.LoginData.Password != "" {
+				password := maskSecret(item.LoginData.Password, m.detailRevealSensitive)
+				b.WriteString("Пароль    : " + password + "  [пробел: показать]\n")
+			}
+			if len(item.LoginData.URIs) > 0 && item.LoginData.URIs[0].URI != "" {
+				b.WriteString("URI       : " + item.LoginData.URIs[0].URI + "\n")
+			}
+			if item.LoginData.TOTP != nil && *item.LoginData.TOTP != "" {
+				b.WriteString("TOTP      : " + *item.LoginData.TOTP + "\n")
+			}
+		}
+		hotKeys = "e: изменить │ c: копировать пароль │ ctrl+d: удалить │ пробел: показать │ esc: назад"
+
+	case models.Text:
+		title = "ЗАМЕТКА: " + item.Metadata.Name
+		b.WriteString("[ ТЕКСТ ]\n")
+		if item.TextData != nil && item.TextData.Text != "" {
+			b.WriteString(item.TextData.Text + "\n")
+		} else {
+			b.WriteString("(пусто)\n")
+		}
+		hotKeys = "e: изменить │ c: копировать текст │ ctrl+d: удалить │ esc: назад"
+
+	case models.Binary:
+		title = "ФАЙЛ: " + item.Metadata.Name
+		b.WriteString("[ ФАЙЛ ]\n")
+		if item.BinaryData != nil {
+			if item.BinaryData.FileName != "" {
+				b.WriteString("Имя       : " + item.BinaryData.FileName + "\n")
+			}
+			if item.BinaryData.Size > 0 {
+				b.WriteString("Размер    : " + formatSize(item.BinaryData.Size) + "\n")
+			}
+			if item.BinaryData.ID != "" {
+				b.WriteString("ID        : " + item.BinaryData.ID + "\n")
+			}
+		}
+		hotKeys = "e: изменить │ ctrl+d: удалить │ esc: назад"
+
+	case models.BankCard:
+		title = "КАРТА: " + item.Metadata.Name
+		b.WriteString("[ КАРТА ]\n")
+		if item.BankCardData != nil {
+			if item.BankCardData.CardholderName != "" {
+				b.WriteString("Держатель : " + item.BankCardData.CardholderName + "\n")
+			}
+			if item.BankCardData.Number != "" {
+				number := maskCardNumber(item.BankCardData.Number, m.detailRevealSensitive)
+				b.WriteString("Номер     : " + number + "  [пробел: показать]\n")
+			}
+			if item.BankCardData.Brand != "" {
+				b.WriteString("Сеть      : " + item.BankCardData.Brand + "\n")
+			}
+			if item.BankCardData.ExpMonth != "" || item.BankCardData.ExpYear != "" {
+				b.WriteString("Срок      : " + item.BankCardData.ExpMonth + "/" + item.BankCardData.ExpYear + "\n")
+			}
+			if item.BankCardData.Code != "" {
+				cvv := maskSecret(item.BankCardData.Code, m.detailRevealSensitive)
+				b.WriteString("CVV       : " + cvv + "  [пробел: показать]\n")
+			}
+		}
+		hotKeys = "e: изменить │ c: копировать номер │ ctrl+d: удалить │ пробел: показать │ esc: назад"
+
+	default:
+		title = "ЗАПИСЬ: " + item.Metadata.Name
+		b.WriteString("[ ДАННЫЕ ]\n")
+		b.WriteString("Тип       : " + dataTypeLabel(item.Type) + "\n")
+		hotKeys = "e: изменить │ ctrl+d: удалить │ esc: назад"
+	}
+
+	b.WriteString("\n")
+	notesTitle := "[ ЗАМЕТКИ ]"
+	if item.Notes != nil && item.Notes.IsEncrypted {
+		notesTitle = "[ ЗАМЕТКИ 🔒 ]"
+	}
+	b.WriteString(notesTitle + "\n")
+	if item.Notes != nil && strings.TrimSpace(item.Notes.Notes) != "" {
+		b.WriteString(item.Notes.Notes + "\n")
+	} else {
+		b.WriteString("(пусто)\n")
+	}
+
+	return title, b.String(), hotKeys
+}
+
+func (m mainLoopModel) detailCopyValue(item models.DecipheredPayload) (string, bool) {
+	switch item.Type {
+	case models.LoginPassword:
+		if item.LoginData != nil && item.LoginData.Password != "" {
+			return item.LoginData.Password, true
+		}
+	case models.Text:
+		if item.TextData != nil && item.TextData.Text != "" {
+			return item.TextData.Text, true
+		}
+	case models.BankCard:
+		if item.BankCardData != nil && item.BankCardData.Number != "" {
+			return item.BankCardData.Number, true
+		}
+	}
+	return "", false
+}
+
+func maskSecret(value string, reveal bool) string {
+	if reveal {
+		return value
+	}
+	if value == "" {
+		return ""
+	}
+	return strings.Repeat("•", 10)
+}
+
+func maskCardNumber(number string, reveal bool) string {
+	clean := strings.ReplaceAll(number, " ", "")
+	if reveal || len(clean) <= 4 {
+		return number
+	}
+	last4 := clean[len(clean)-4:]
+	return "**** **** **** " + last4
 }
 
 func dataTypeLabel(t models.DataType) string {
