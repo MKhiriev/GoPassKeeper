@@ -136,7 +136,7 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case syncDoneMsg:
 		m.syncing = false
 		if msg.err != nil {
-			m.errMsg = fmt.Sprintf("Ошибка синхронизации: %v", msg.err)
+			m.errMsg = syncErrorMessage(msg.err)
 			return m, nil
 		}
 		m.status = "Синхронизация завершена"
@@ -983,6 +983,24 @@ func (m mainLoopModel) activeUserID() int64 {
 		return m.userID
 	}
 	return 0
+}
+
+func syncErrorMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	s := strings.ToLower(err.Error())
+	if strings.Contains(s, "connection refused") ||
+		strings.Contains(s, "dial tcp") ||
+		strings.Contains(s, "no such host") ||
+		strings.Contains(s, "network is unreachable") ||
+		strings.Contains(s, "i/o timeout") ||
+		strings.Contains(s, "context deadline exceeded") {
+		return "синхронизация не выполнена. Отсутствует сеть или Сервер недоступен"
+	}
+
+	return fmt.Sprintf("Ошибка синхронизации: %v", err)
 }
 
 func (m mainLoopModel) updateEditing(msg tea.Msg) (tea.Model, tea.Cmd) {
