@@ -10,6 +10,7 @@ import (
 )
 
 var ErrUserQuit = errors.New("вышел из программы")
+var ErrUserIDMissing = errors.New("не удалось получить user id после входа")
 
 type TUI struct {
 	services *service.ClientServices
@@ -20,6 +21,8 @@ func New(services *service.ClientServices, _ *logger.Logger) (*TUI, error) {
 }
 
 func (t *TUI) LoginFlow(ctx context.Context) (userID int64, encryptionKey []byte, err error) {
+	clearSessionUserID()
+
 	pages := map[string]tea.Model{
 		"menu":     NewMenuModel(),
 		"login":    NewLoginModel(ctx, t.services.AuthService),
@@ -37,13 +40,23 @@ func (t *TUI) LoginFlow(ctx context.Context) (userID int64, encryptionKey []byte
 		return 0, nil, tea.ErrProgramKilled
 	}
 	if result.quitByUser {
+		clearSessionUserID()
 		return 0, nil, ErrUserQuit
 	}
+	if result.resultID <= 0 {
+		clearSessionUserID()
+		return 0, nil, ErrUserIDMissing
+	}
+	setSessionUserID(result.resultID)
 
 	return result.resultID, result.resultKey, nil
 }
 
 func (t *TUI) MainLoop(ctx context.Context, userID int64) (logout bool, err error) {
+	if userID > 0 {
+		setSessionUserID(userID)
+	}
+
 	model := newMainLoopModel(ctx, t.services, userID)
 	finalModel, runErr := tea.NewProgram(model, tea.WithAltScreen()).Run()
 	if runErr != nil {

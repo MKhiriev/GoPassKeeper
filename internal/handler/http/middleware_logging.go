@@ -1,6 +1,8 @@
 package http
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"time"
 
@@ -41,6 +43,16 @@ func withLogging(next http.Handler) http.Handler {
 		// handler mutates the request (e.g. via r.WithContext).
 		uri := r.RequestURI
 		method := r.Method
+
+		// Read and restore the request body so downstream handlers can still read it.
+		if r.Body != nil {
+			bodyBytes, err := io.ReadAll(r.Body)
+			if err == nil {
+				log.Debug().RawJSON("incoming data", bodyBytes).Msg("incoming request")
+				// Restore the body for downstream handlers.
+				r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			}
+		}
 
 		// Wrap the ResponseWriter so that the status code and response body
 		// size written by downstream handlers can be observed after the call.

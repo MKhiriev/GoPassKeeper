@@ -57,6 +57,7 @@ func (r RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch result := msg.(type) {
 	case LoginResult:
 		if result.Err == nil {
+			setSessionUserID(result.UserID)
 			r.resultID = result.UserID
 			r.resultKey = result.EncryptionKey
 			return r, tea.Quit

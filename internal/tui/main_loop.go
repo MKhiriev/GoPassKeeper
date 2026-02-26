@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,6 +30,7 @@ type mainLoopModel struct {
 	ctx      context.Context
 	services *service.ClientServices
 	userID   int64
+	debug    bool
 
 	items   []models.DecipheredPayload
 	idx     int
@@ -81,11 +83,22 @@ type createDoneMsg struct {
 	err error
 }
 
+var errUserIDNotSet = errors.New("user id не установлен")
+
 func newMainLoopModel(ctx context.Context, services *service.ClientServices, userID int64) mainLoopModel {
+	effectiveUserID := userID
+	if effectiveUserID == 0 {
+		effectiveUserID = getSessionUserID()
+	}
+	if effectiveUserID > 0 {
+		setSessionUserID(effectiveUserID)
+	}
+
 	return mainLoopModel{
 		ctx:      ctx,
 		services: services,
-		userID:   userID,
+		userID:   effectiveUserID,
+		debug:    isTUIDebugEnabled(),
 		loading:  true,
 		addTypeOptions: []models.DataType{
 			models.LoginPassword,
@@ -289,7 +302,7 @@ func (m mainLoopModel) updateAddType(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *mainLoopModel) selectAddType() {
-	m.addPayload = models.DecipheredPayload{UserID: m.userID, Type: m.addTypeOptions[m.addTypeIdx]}
+	m.addPayload = models.DecipheredPayload{UserID: m.activeUserID(), Type: m.addTypeOptions[m.addTypeIdx]}
 	m.addErr = ""
 	m.addStage = addStageMeta
 	m.initAddMetaInputs()
@@ -685,6 +698,9 @@ func (m mainLoopModel) View() string {
 	if m.status != "" {
 		out += "Статус: " + m.status + "\n"
 	}
+	if m.debug {
+		out += fmt.Sprintf("DEBUG: user_id=%d session_user_id=%d\n", m.userID, getSessionUserID())
+	}
 
 	if len(m.items) == 0 {
 		if out != "" {
@@ -824,9 +840,12 @@ func (m mainLoopModel) current() (models.DecipheredPayload, bool) {
 func (m mainLoopModel) cmdLoadItems() tea.Cmd {
 	ctx := m.ctx
 	svc := m.services.PrivateDataService
-	userID := m.userID
 
 	return func() tea.Msg {
+		userID := m.activeUserID()
+		if userID <= 0 {
+			return listLoadedMsg{err: errUserIDNotSet}
+		}
 		items, err := svc.GetAll(ctx, userID)
 		return listLoadedMsg{items: items, err: err}
 	}
@@ -835,9 +854,12 @@ func (m mainLoopModel) cmdLoadItems() tea.Cmd {
 func (m mainLoopModel) cmdSync() tea.Cmd {
 	ctx := m.ctx
 	svc := m.services.SyncService
-	userID := m.userID
 
 	return func() tea.Msg {
+		userID := m.activeUserID()
+		if userID <= 0 {
+			return syncDoneMsg{err: errUserIDNotSet}
+		}
 		err := svc.FullSync(ctx, userID)
 		return syncDoneMsg{err: err}
 	}
@@ -846,9 +868,12 @@ func (m mainLoopModel) cmdSync() tea.Cmd {
 func (m mainLoopModel) cmdDelete(clientSideID string) tea.Cmd {
 	ctx := m.ctx
 	svc := m.services.PrivateDataService
-	userID := m.userID
 
 	return func() tea.Msg {
+		userID := m.activeUserID()
+		if userID <= 0 {
+			return deleteDoneMsg{err: errUserIDNotSet}
+		}
 		err := svc.Delete(ctx, clientSideID, userID)
 		return deleteDoneMsg{err: err}
 	}
@@ -859,6 +884,13 @@ func (m mainLoopModel) cmdUpdate(payload models.DecipheredPayload) tea.Cmd {
 	svc := m.services.PrivateDataService
 
 	return func() tea.Msg {
+		userID := m.activeUserID()
+		if userID <= 0 {
+			return updateDoneMsg{err: errUserIDNotSet}
+		}
+		if payload.UserID == 0 {
+			payload.UserID = userID
+		}
 		err := svc.Update(ctx, payload)
 		return updateDoneMsg{err: err}
 	}
@@ -867,9 +899,15 @@ func (m mainLoopModel) cmdUpdate(payload models.DecipheredPayload) tea.Cmd {
 func (m mainLoopModel) cmdCreate(payload models.DecipheredPayload) tea.Cmd {
 	ctx := m.ctx
 	svc := m.services.PrivateDataService
-	userID := m.userID
 
 	return func() tea.Msg {
+		userID := m.activeUserID()
+		if userID <= 0 {
+			return createDoneMsg{err: errUserIDNotSet}
+		}
+		if payload.UserID == 0 {
+			payload.UserID = userID
+		}
 		err := svc.Create(ctx, userID, payload)
 		return createDoneMsg{err: err}
 	}
@@ -895,6 +933,16 @@ func (m *mainLoopModel) startEdit(item models.DecipheredPayload) {
 	m.editPayload = item
 	m.editing = true
 	m.errMsg = ""
+}
+
+func (m mainLoopModel) activeUserID() int64 {
+	if sid := getSessionUserID(); sid > 0 {
+		return sid
+	}
+	if m.userID > 0 {
+		return m.userID
+	}
+	return 0
 }
 
 func (m mainLoopModel) updateEditing(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -987,4 +1035,13 @@ func formatSize(size int64) string {
 		return fmt.Sprintf("%.1f KB", float64(size)/kb)
 	}
 	return fmt.Sprintf("%d B", size)
+}
+
+func isTUIDebugEnabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("GPK_TUI_DEBUG"))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }

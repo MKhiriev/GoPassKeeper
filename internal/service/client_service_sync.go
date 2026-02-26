@@ -25,6 +25,10 @@ func NewClientSyncService(localStore *store.ClientStorages, serverAdapter adapte
 }
 
 func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
+	if userID <= 0 {
+		return fmt.Errorf("full sync: invalid user id")
+	}
+
 	serverStates, err := s.adapter.GetServerStates(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get server states: %w", err)
@@ -53,6 +57,10 @@ func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
 }
 
 func (s *clientSyncService) ExecutePlan(ctx context.Context, plan models.SyncPlan, userID int64) error {
+	if userID <= 0 {
+		return fmt.Errorf("execute sync plan: invalid user id")
+	}
+
 	if len(plan.Download) > 0 {
 		if err := s.downloadFromServer(ctx, plan, userID); err != nil {
 			return err
@@ -90,6 +98,7 @@ func (s *clientSyncService) downloadFromServer(ctx context.Context, plan models.
 	ids := collectIDs(plan.Download)
 
 	downloadedData, err := s.adapter.Download(ctx, models.DownloadRequest{
+		UserID:        userID,
 		ClientSideIDs: ids,
 		Length:        len(ids),
 	})
@@ -117,7 +126,11 @@ func (s *clientSyncService) uploadToServer(ctx context.Context, plan models.Sync
 		payload = append(payload, &it)
 	}
 
-	if err := s.adapter.Upload(ctx, models.UploadRequest{PrivateDataList: payload, Length: len(payload)}); err != nil {
+	if err := s.adapter.Upload(ctx, models.UploadRequest{
+		UserID:          userID,
+		PrivateDataList: payload,
+		Length:          len(payload),
+	}); err != nil {
 		return fmt.Errorf("upload items in sync plan: %w", err)
 	}
 
@@ -133,7 +146,7 @@ func (s *clientSyncService) updateServerData(ctx context.Context, clientSideID s
 	meta := item.Payload.Metadata
 	data := item.Payload.Data
 	req := models.UpdateRequest{
-		UserID: item.UserID,
+		UserID: userID,
 		PrivateDataUpdates: []models.PrivateDataUpdate{{
 			ClientSideID:      item.ClientSideID,
 			Version:           item.Version,
@@ -155,7 +168,7 @@ func (s *clientSyncService) updateServerData(ctx context.Context, clientSideID s
 		return fmt.Errorf("update server item %s: %w", clientSideID, err)
 	}
 
-	return s.refreshConflict(ctx, item.UserID, clientSideID)
+	return s.refreshConflict(ctx, userID, clientSideID)
 }
 
 func (s *clientSyncService) deleteFromClient(ctx context.Context, clientSideID string, version int64) error {
@@ -172,7 +185,7 @@ func (s *clientSyncService) deleteFromServer(ctx context.Context, clientSideID s
 		return fmt.Errorf("load local item for delete %s: %w", clientSideID, err)
 	}
 
-	req := models.DeleteRequest{UserID: item.UserID, DeleteEntries: []models.DeleteEntry{{
+	req := models.DeleteRequest{UserID: userID, DeleteEntries: []models.DeleteEntry{{
 		ClientSideID: clientSideID,
 		Version:      item.Version,
 	}}}
@@ -185,7 +198,7 @@ func (s *clientSyncService) deleteFromServer(ctx context.Context, clientSideID s
 		return fmt.Errorf("delete server item %s: %w", clientSideID, err)
 	}
 
-	return s.refreshConflict(ctx, item.UserID, clientSideID)
+	return s.refreshConflict(ctx, userID, clientSideID)
 }
 
 func (s *clientSyncService) refreshConflict(ctx context.Context, userID int64, clientSideID string) error {

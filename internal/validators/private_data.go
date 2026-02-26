@@ -379,7 +379,7 @@ func (v *PrivateDataValidator) validateDownloadDataRequest(ctx context.Context, 
 			}
 		case FieldClientSideIDs:
 			for _, clientSideID := range request.ClientSideIDs {
-				if clientSideID != "" {
+				if clientSideID == "" {
 					return ErrInvalidClientSideID
 				}
 			}

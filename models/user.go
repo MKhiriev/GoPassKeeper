@@ -8,7 +8,7 @@ import "time"
 type User struct {
 	// UserID is the internal unique identifier of the user.
 	// It is not exposed via JSON and is used only at the persistence layer.
-	UserID int64 `json:"-"`
+	UserID int64 `json:"user_id"`
 
 	// Login is the unique user login identifier.
 	// Typically used during authentication.
