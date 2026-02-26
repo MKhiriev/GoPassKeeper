@@ -18,14 +18,22 @@ type clientPrivateDataService struct {
 	clientIDGenerator *utils.UUIDGenerator
 }
 
+// NewClientPrivateDataService constructs a clientPrivateDataService wired to the
+// provided local store, server adapter, and crypto service. A UUID generator is
+// allocated internally for assigning client-side IDs to new vault items.
 func NewClientPrivateDataService(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter, crypto ClientCryptoService) ClientPrivateDataService {
 	return &clientPrivateDataService{localStore: localStore, adapter: serverAdapter, crypto: crypto, clientIDGenerator: utils.NewUUIDGenerator()}
 }
 
+// SetEncryptionKey implements ClientPrivateDataService. It forwards the DEK to the
+// underlying ClientCryptoService so that subsequent encrypt/decrypt calls use it.
 func (p *clientPrivateDataService) SetEncryptionKey(key []byte) {
 	p.crypto.SetEncryptionKey(key)
 }
 
+// Create implements ClientPrivateDataService. It encrypts plain, assigns a new
+// UUID as the client-side ID, saves the item to the local store, and uploads it
+// to the server. Returns an error if any step fails.
 func (p *clientPrivateDataService) Create(ctx context.Context, userID int64, plain models.DecipheredPayload) error {
 	encPayload, err := p.crypto.EncryptPayload(plain)
 	if err != nil {
@@ -60,6 +68,9 @@ func (p *clientPrivateDataService) Create(ctx context.Context, userID int64, pla
 	return nil
 }
 
+// GetAll implements ClientPrivateDataService. It loads all non-deleted vault items
+// for userID from the local store, decrypts each payload, and returns the plaintext
+// slice. Returns an error if the local query or any decryption fails.
 func (p *clientPrivateDataService) GetAll(ctx context.Context, userID int64) ([]models.DecipheredPayload, error) {
 	items, err := p.localStore.PrivateDataRepository.GetAllPrivateData(ctx, userID)
 	if err != nil {
@@ -85,6 +96,9 @@ func (p *clientPrivateDataService) GetAll(ctx context.Context, userID int64) ([]
 	return decrypted, nil
 }
 
+// Get implements ClientPrivateDataService. It loads the vault item identified by
+// clientSideID from the local store, decrypts its payload, and returns the plaintext.
+// Returns an error if the item is not found or decryption fails.
 func (p *clientPrivateDataService) Get(ctx context.Context, clientSideID string, userID int64) (models.DecipheredPayload, error) {
 	item, err := p.localStore.PrivateDataRepository.GetPrivateData(ctx, clientSideID, userID)
 	if err != nil {
@@ -105,6 +119,9 @@ func (p *clientPrivateDataService) Get(ctx context.Context, clientSideID string,
 	return payload, nil
 }
 
+// Update implements ClientPrivateDataService. It encrypts the modified payload,
+// updates the local store, and pushes the change to the server. On server success
+// the local version counter is incremented. Returns an error if any step fails.
 func (p *clientPrivateDataService) Update(ctx context.Context, data models.DecipheredPayload) error {
 	prev, err := p.localStore.PrivateDataRepository.GetPrivateData(ctx, data.ClientSideID, data.UserID)
 	if err != nil {
@@ -160,6 +177,9 @@ func (p *clientPrivateDataService) Update(ctx context.Context, data models.Decip
 	return nil
 }
 
+// Delete implements ClientPrivateDataService. It soft-deletes the vault item in the
+// local store and sends a delete request to the server. On server success the local
+// version counter is incremented. Returns an error if any step fails.
 func (p *clientPrivateDataService) Delete(ctx context.Context, clientSideID string, userID int64) error {
 	item, err := p.localStore.PrivateDataRepository.GetPrivateData(ctx, clientSideID, userID)
 	if err != nil {

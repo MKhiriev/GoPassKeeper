@@ -13,10 +13,15 @@ type clientCryptoService struct {
 	crypto crypto.KeyChainService
 }
 
+// NewClientCryptoService constructs a clientCryptoService backed by the provided
+// KeyChainService. The DEK (encryption key) is initially nil; call SetEncryptionKey
+// after a successful login before using Encrypt/Decrypt.
 func NewClientCryptoService(crypto crypto.KeyChainService) ClientCryptoService {
 	return &clientCryptoService{crypto: crypto}
 }
 
+// SetEncryptionKey implements ClientCryptoService. It stores the plaintext DEK for
+// use in all subsequent EncryptPayload and DecryptPayload calls.
 func (c *clientCryptoService) SetEncryptionKey(key []byte) {
 	c.key = key
 }
@@ -31,6 +36,10 @@ type dataPayload struct {
 	BankCardData *models.BankCardData `json:"bank_card_data,omitempty"`
 }
 
+// EncryptPayload implements ClientCryptoService. It encrypts metadata, the typed
+// data bundle, and the optional notes and additional fields independently using the
+// stored DEK. The DataType field is left unencrypted. Returns an error if any field
+// encryption fails.
 func (c *clientCryptoService) EncryptPayload(plain models.DecipheredPayload) (models.PrivateDataPayload, error) {
 	// --- Metadata ---
 	encMeta, err := c.crypto.EncryptData(plain.Metadata, c.key)
@@ -78,6 +87,10 @@ func (c *clientCryptoService) EncryptPayload(plain models.DecipheredPayload) (mo
 	return out, nil
 }
 
+// DecryptPayload implements ClientCryptoService. It decrypts metadata, the typed
+// data bundle, and the optional notes and additional fields using the stored DEK.
+// The DataType field is copied as-is (it is never encrypted). Returns an error if
+// any field decryption fails.
 func (c *clientCryptoService) DecryptPayload(enc models.PrivateDataPayload) (models.DecipheredPayload, error) {
 	// --- Metadata ---
 	var meta models.Metadata
@@ -122,6 +135,8 @@ func (c *clientCryptoService) DecryptPayload(enc models.PrivateDataPayload) (mod
 	return out, nil
 }
 
+// ComputeHash implements ClientCryptoService. It serialises payload to JSON and
+// returns its SHA-256 hash as a hex string for use in sync conflict detection.
 func (c *clientCryptoService) ComputeHash(payload any) (string, error) {
 	return utils.HashJSONToString(payload)
 }

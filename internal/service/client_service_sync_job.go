@@ -14,10 +14,16 @@ type clientSyncJob struct {
 	wg     sync.WaitGroup
 }
 
+// NewClientSyncJob creates a clientSyncJob that calls syncService.FullSync on a
+// ticker. The job is idle until Start is called.
 func NewClientSyncJob(syncService ClientSyncService) ClientSyncJob {
 	return &clientSyncJob{syncService: syncService}
 }
 
+// Start implements ClientSyncJob. It stops any previously running job, then
+// launches a background goroutine that calls FullSync every interval. If interval
+// is zero or negative it defaults to 5 minutes. The goroutine exits when ctx is
+// cancelled or Stop is called.
 func (j *clientSyncJob) Start(ctx context.Context, userID int64, interval time.Duration) {
 	if interval <= 0 {
 		interval = 5 * time.Minute
@@ -47,6 +53,9 @@ func (j *clientSyncJob) Start(ctx context.Context, userID int64, interval time.D
 	}()
 }
 
+// Stop implements ClientSyncJob. It cancels the background goroutine's context and
+// blocks until the goroutine has fully exited. Safe to call when the job is not
+// running (no-op in that case).
 func (j *clientSyncJob) Stop() {
 	j.mu.Lock()
 	cancel := j.cancel

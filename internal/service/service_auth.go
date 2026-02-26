@@ -119,6 +119,13 @@ func (a *authService) Login(ctx context.Context, user models.User) (models.User,
 	return foundUser, nil
 }
 
+// Params looks up a user's full record by login without verifying the password.
+// It is used by the HTTP handler to retrieve the encryption salt before the
+// client computes its auth hash.
+//
+// Returns the found user record or:
+//   - ErrInvalidDataProvided if Login is empty.
+//   - A wrapped storage error if the repository lookup fails.
 func (a *authService) Params(ctx context.Context, user models.User) (models.User, error) {
 	log := logger.FromContext(ctx)
 

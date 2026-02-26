@@ -16,6 +16,9 @@ type clientSyncService struct {
 	planner    SyncService
 }
 
+// NewClientSyncService constructs a clientSyncService wired to the provided local
+// store and server adapter. An in-memory SyncService is created internally to build
+// sync plans.
 func NewClientSyncService(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter) ClientSyncService {
 	return &clientSyncService{
 		localStore: localStore,
@@ -24,6 +27,9 @@ func NewClientSyncService(localStore *store.ClientStorages, serverAdapter adapte
 	}
 }
 
+// FullSync implements ClientSyncService. It fetches state descriptors from both the
+// server and the local store, builds a sync plan, and executes it. Returns an error
+// if userID is invalid, any I/O step fails, or plan execution fails.
 func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
 	if userID <= 0 {
 		return fmt.Errorf("full sync: invalid user id")
@@ -56,6 +62,9 @@ func (s *clientSyncService) FullSync(ctx context.Context, userID int64) error {
 	return nil
 }
 
+// ExecutePlan implements ClientSyncService. It carries out all actions in plan in
+// the following order: Download, Upload, Update, DeleteClient, DeleteServer. Returns
+// an error if userID is invalid or any individual action fails.
 func (s *clientSyncService) ExecutePlan(ctx context.Context, plan models.SyncPlan, userID int64) error {
 	if userID <= 0 {
 		return fmt.Errorf("execute sync plan: invalid user id")

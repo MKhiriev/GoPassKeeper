@@ -60,8 +60,13 @@ var (
 	ErrVersionIsNotSpecified = errors.New("version is not specified")
 )
 
-// client errors
 var (
+	// ErrRegisterOnServer is returned by the client auth service when the server
+	// rejects or fails to process the registration request.
 	ErrRegisterOnServer = errors.New("register user on server")
-	ErrLoginOnServer    = errors.New("login on server")
+
+	// ErrLoginOnServer is returned by the client auth service when the server
+	// rejects or fails to process the login request (e.g. wrong credentials,
+	// network error, or bad-gateway response from the server adapter).
+	ErrLoginOnServer = errors.New("login on server")
 )
