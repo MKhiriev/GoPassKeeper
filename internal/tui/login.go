@@ -102,13 +102,13 @@ func (m *LoginModel) View() string {
 	b.WriteString("]\n")
 
 	if m.submitting {
-		b.WriteString("Действие│ [Войти...]\n")
+		b.WriteString("\n[Войти...]\n")
 	} else {
-		b.WriteString("Действие│ [Войти]\n")
+		b.WriteString("\n[Войти]\n")
 	}
 
 	if m.errMsg != "" {
-		b.WriteString("Ошибка  │ ")
+		b.WriteString("\nОшибка: ")
 		b.WriteString(m.errMsg)
 		b.WriteString("\n")
 	}

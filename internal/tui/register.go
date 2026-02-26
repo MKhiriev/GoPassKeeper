@@ -142,13 +142,13 @@ func (m *RegisterModel) View() string {
 	b.WriteString("]\n")
 
 	if m.submitting {
-		b.WriteString("Действие       │ [Зарегистрироваться...]\n")
+		b.WriteString("\n[Зарегистрироваться...]\n")
 	} else {
-		b.WriteString("Действие       │ [Зарегистрироваться]\n")
+		b.WriteString("\n[Зарегистрироваться]\n")
 	}
 
 	if m.errMsg != "" {
-		b.WriteString("Ошибка         │ ")
+		b.WriteString("\nОшибка: ")
 		b.WriteString(m.errMsg)
 		b.WriteString("\n")
 	}

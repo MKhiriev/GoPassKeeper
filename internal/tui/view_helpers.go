@@ -1,23 +1,21 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
-const uiDivider = "──────────────────────────────────────────────────────"
-
-func viewTitle(title string) string {
-	return fmt.Sprintf("%s\n%s\n", title, uiDivider)
-}
+const minDividerWidth = 54
 
 func renderPage(title, data, hotKeys string) string {
 	var b strings.Builder
+	divider := strings.Repeat("─", pageContentWidth(title, data, hotKeys))
 
 	b.WriteString(title)
 	b.WriteString("\n")
 	b.WriteString("  ")
-	b.WriteString(uiDivider)
+	b.WriteString(divider)
 	b.WriteString("\n\n")
 
 	if strings.TrimSpace(data) != "" {
@@ -33,7 +31,7 @@ func renderPage(title, data, hotKeys string) string {
 
 	b.WriteString("\n")
 	b.WriteString("  ")
-	b.WriteString(uiDivider)
+	b.WriteString(divider)
 	b.WriteString("\n")
 
 	if strings.TrimSpace(hotKeys) != "" {
@@ -44,6 +42,29 @@ func renderPage(title, data, hotKeys string) string {
 	b.WriteString("  ctrl+c: выход")
 
 	return b.String()
+}
+
+func pageContentWidth(title, data, hotKeys string) int {
+	width := minDividerWidth
+
+	width = max(width, lipgloss.Width(title))
+	width = max(width, maxLineWidth(data))
+	width = max(width, maxLineWidth(hotKeys))
+	width = max(width, lipgloss.Width("ctrl+c: выход"))
+
+	return width
+}
+
+func maxLineWidth(block string) int {
+	if strings.TrimSpace(block) == "" {
+		return 0
+	}
+
+	maxWidth := 0
+	for _, line := range strings.Split(block, "\n") {
+		maxWidth = max(maxWidth, lipgloss.Width(line))
+	}
+	return maxWidth
 }
 
 func valueOrDash(v *string) string {

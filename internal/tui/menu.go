@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type MenuModel struct {
@@ -63,25 +64,39 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MenuModel) View() string {
 	var b strings.Builder
-	b.WriteString("ID   │ Действие\n")
-	b.WriteString("─────┼────────────────────\n")
+	idColWidth := lipgloss.Width("ID")
+	itemsCountWidth := lipgloss.Width(fmt.Sprintf("%d", len(m.items)))
+	if itemsCountWidth > idColWidth {
+		idColWidth = itemsCountWidth
+	}
+	idColWidth += 2 // reserve space for selection marker and space ("<marker> <id>")
 
-	if m.status != "" {
-		b.WriteString("     │ ")
-		b.WriteString("OK: ")
-		b.WriteString(m.status)
-		b.WriteString("\n")
+	actionColWidth := lipgloss.Width("Действие")
+	for _, item := range m.items {
+		if w := lipgloss.Width(item); w > actionColWidth {
+			actionColWidth = w
+		}
 	}
 
+	if m.status != "" {
+		b.WriteString("OK: ")
+		b.WriteString(m.status)
+		b.WriteString("\n\n")
+	}
+
+	b.WriteString(fmt.Sprintf("%-*s │ %-*s\n", idColWidth, "ID", actionColWidth, "Действие"))
+	b.WriteString(strings.Repeat("─", idColWidth))
+	b.WriteString("─┼─")
+	b.WriteString(strings.Repeat("─", actionColWidth))
+	b.WriteString("\n")
+
 	for i, item := range m.items {
-		cursor := "  "
+		cursor := " "
 		if i == m.idx {
-			cursor = "> "
+			cursor = ">"
 		}
-		b.WriteString(cursor)
-		b.WriteString(fmt.Sprintf("%-3d │ ", i+1))
-		b.WriteString(item)
-		b.WriteString("\n")
+		idCell := fmt.Sprintf("%s %d", cursor, i+1)
+		b.WriteString(fmt.Sprintf("%-*s │ %-*s\n", idColWidth, idCell, actionColWidth, item))
 	}
 
 	return renderPage("ГЛАВНОЕ МЕНЮ", strings.TrimRight(b.String(), "\n"), "enter: выбрать │ ↑/↓: навигация")
