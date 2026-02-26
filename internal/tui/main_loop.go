@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -459,6 +460,7 @@ func (m *mainLoopModel) initAddDataInputs() {
 		number := textinput.New()
 		number.Placeholder = "Номер"
 		number.Width = 40
+		number.CharLimit = 16
 
 		brand := textinput.New()
 		brand.Placeholder = "Сеть"
@@ -467,6 +469,7 @@ func (m *mainLoopModel) initAddDataInputs() {
 		month := textinput.New()
 		month.Placeholder = "Месяц (мм)"
 		month.Width = 40
+		month.CharLimit = 2
 
 		year := textinput.New()
 		year.Placeholder = "Год (гг)"
@@ -546,6 +549,9 @@ func (m mainLoopModel) updateAddDataInputs(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.addDataInputs[m.addDataFocus], cmd = m.addDataInputs[m.addDataFocus].Update(msg)
+	if m.addPayload.Type == models.BankCard {
+		sanitizeAddBankCardInputs(&m.addDataInputs)
+	}
 	return m, cmd
 }
 
@@ -596,14 +602,20 @@ func (m *mainLoopModel) collectAddTypedData() error {
 
 	case models.BankCard:
 		holder := strings.TrimSpace(m.addDataInputs[0].Value())
-		number := strings.TrimSpace(m.addDataInputs[1].Value())
+		number := trimDigitsToLimit(m.addDataInputs[1].Value(), 16)
 		brand := strings.TrimSpace(m.addDataInputs[2].Value())
-		month := strings.TrimSpace(m.addDataInputs[3].Value())
+		month := trimDigitsToLimit(m.addDataInputs[3].Value(), 2)
 		year := strings.TrimSpace(m.addDataInputs[4].Value())
 		cvv := strings.TrimSpace(m.addDataInputs[5].Value())
 
 		if number == "" || cvv == "" {
 			return fmt.Errorf("номер карты и CVV обязательны")
+		}
+		if len(number) > 16 {
+			return fmt.Errorf("номер карты: максимум 16 цифр")
+		}
+		if month != "" && !isValidMonthMM(month) {
+			return fmt.Errorf("месяц должен быть в формате 01-12")
 		}
 
 		m.addPayload.BankCardData = &models.BankCardData{
@@ -696,19 +708,33 @@ func (m mainLoopModel) View() string {
 	}
 
 	if m.editing {
-		out := "Поле      │ Значение\n"
-		out += "──────────┼──────────────────────────────────────────\n"
-		out += "Название  │ [" + m.editInputs[0].View() + "]\n"
-		out += "Папка     │ [" + m.editInputs[1].View() + "]\n"
-		if m.editSubmitting {
-			out += "Действие  │ [Сохранение...]\n"
+		out := ""
+		if m.editPayload.Type == models.BankCard && len(m.editInputs) >= 8 {
+			out += "[ ОСНОВНОЕ ]\n"
+			out += "Название  : [" + m.editInputs[0].View() + "]\n"
+			out += "Папка     : [" + m.editInputs[1].View() + "]\n\n"
+			out += "[ КАРТА ]\n"
+			out += "Держатель : [" + m.editInputs[2].View() + "]\n"
+			out += "Номер     : [" + m.editInputs[3].View() + "]\n"
+			out += "Сеть      : [" + m.editInputs[4].View() + "]\n"
+			out += "Срок (мм) : [" + m.editInputs[5].View() + "]\n"
+			out += "Срок (гг) : [" + m.editInputs[6].View() + "]\n"
+			out += "CVV       : [" + m.editInputs[7].View() + "]\n"
 		} else {
-			out += "Действие  │ [Сохранить]\n"
+			out += "Поле      │ Значение\n"
+			out += "──────────┼──────────────────────────────────────────\n"
+			out += "Название  │ [" + m.editInputs[0].View() + "]\n"
+			out += "Папка     │ [" + m.editInputs[1].View() + "]\n"
+		}
+		if m.editSubmitting {
+			out += "\n[Сохранение...]\n"
+		} else {
+			out += "\n[Сохранить]\n"
 		}
 		if m.errMsg != "" {
-			out += "Ошибка    │ " + m.errMsg + "\n"
+			out += "Ошибка: " + m.errMsg + "\n"
 		}
-		return renderPage("ИЗМЕНЕНИЕ ЗАПИСИ", strings.TrimRight(out, "\n"), "esc: назад │ tab: след. поле │ enter: сохранить")
+		return renderPage("ИЗМЕНЕНИЕ ЗАПИСИ", strings.TrimRight(out, "\n"), "esc: назад │ tab: след. поле │ shift+tab: пред. поле │ enter: сохранить")
 	}
 
 	if m.detail {
@@ -725,7 +751,7 @@ func (m mainLoopModel) View() string {
 
 	if m.loading {
 		out += "Загрузка списка...\n"
-		return renderPage("ГЛАВНАЯ СТРАНИЦА", strings.TrimRight(out, "\n"), "a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав.")
+		return renderPage("ГЛАВНАЯ СТРАНИЦА", strings.TrimRight(out, "\n"), "a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти")
 	}
 
 	if m.errMsg != "" {
@@ -770,7 +796,7 @@ func (m mainLoopModel) View() string {
 	return renderPage(
 		"ГЛАВНАЯ СТРАНИЦА",
 		strings.TrimRight(out, "\n"),
-		"a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав.",
+		"a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти",
 	)
 }
 
@@ -967,7 +993,49 @@ func (m *mainLoopModel) startEdit(item models.DecipheredPayload) {
 	}
 	folder.Width = 40
 
-	m.editInputs = []textinput.Model{name, folder}
+	inputs := []textinput.Model{name, folder}
+	if item.Type == models.BankCard {
+		holder := textinput.New()
+		holder.Placeholder = "cardholder"
+		holder.Width = 40
+
+		number := textinput.New()
+		number.Placeholder = "number"
+		number.Width = 40
+		number.CharLimit = 16
+
+		brand := textinput.New()
+		brand.Placeholder = "brand"
+		brand.Width = 40
+
+		month := textinput.New()
+		month.Placeholder = "month (mm)"
+		month.Width = 40
+		month.CharLimit = 2
+
+		year := textinput.New()
+		year.Placeholder = "year (yy)"
+		year.Width = 40
+
+		cvv := textinput.New()
+		cvv.Placeholder = "cvv"
+		cvv.Width = 40
+		cvv.EchoMode = textinput.EchoPassword
+		cvv.EchoCharacter = '*'
+
+		if item.BankCardData != nil {
+			holder.SetValue(item.BankCardData.CardholderName)
+			number.SetValue(trimDigitsToLimit(item.BankCardData.Number, 16))
+			brand.SetValue(item.BankCardData.Brand)
+			month.SetValue(trimDigitsToLimit(item.BankCardData.ExpMonth, 2))
+			year.SetValue(item.BankCardData.ExpYear)
+			cvv.SetValue(item.BankCardData.Code)
+		}
+
+		inputs = append(inputs, holder, number, brand, month, year, cvv)
+	}
+
+	m.editInputs = inputs
 	m.editFocus = 0
 	m.editSubmitting = false
 	m.editPayload = item
@@ -1042,6 +1110,37 @@ func (m mainLoopModel) updateEditing(msg tea.Msg) (tea.Model, tea.Cmd) {
 				f := folder
 				payload.Metadata.Folder = &f
 			}
+			if payload.Type == models.BankCard && len(m.editInputs) >= 8 {
+				holder := strings.TrimSpace(m.editInputs[2].Value())
+				number := trimDigitsToLimit(m.editInputs[3].Value(), 16)
+				brand := strings.TrimSpace(m.editInputs[4].Value())
+				month := trimDigitsToLimit(m.editInputs[5].Value(), 2)
+				year := strings.TrimSpace(m.editInputs[6].Value())
+				cvv := strings.TrimSpace(m.editInputs[7].Value())
+
+				if number == "" || cvv == "" {
+					m.errMsg = "номер карты и CVV обязательны"
+					return m, nil
+				}
+				if len(number) > 16 {
+					m.errMsg = "номер карты: максимум 16 цифр"
+					return m, nil
+				}
+				if month != "" && !isValidMonthMM(month) {
+					m.errMsg = "месяц должен быть в формате 01-12"
+					return m, nil
+				}
+
+				if payload.BankCardData == nil {
+					payload.BankCardData = &models.BankCardData{}
+				}
+				payload.BankCardData.CardholderName = holder
+				payload.BankCardData.Number = number
+				payload.BankCardData.Brand = brand
+				payload.BankCardData.ExpMonth = month
+				payload.BankCardData.ExpYear = year
+				payload.BankCardData.Code = cvv
+			}
 
 			m.errMsg = ""
 			m.editSubmitting = true
@@ -1051,6 +1150,9 @@ func (m mainLoopModel) updateEditing(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.editInputs[m.editFocus], cmd = m.editInputs[m.editFocus].Update(msg)
+	if m.editPayload.Type == models.BankCard {
+		sanitizeEditBankCardInputs(&m.editInputs)
+	}
 	return m, cmd
 }
 
@@ -1183,12 +1285,69 @@ func maskSecret(value string, reveal bool) string {
 }
 
 func maskCardNumber(number string, reveal bool) string {
-	clean := strings.ReplaceAll(number, " ", "")
-	if reveal || len(clean) <= 4 {
-		return number
+	clean := trimDigitsToLimit(number, 0)
+	if reveal {
+		return groupBy4(clean)
 	}
-	last4 := clean[len(clean)-4:]
-	return "**** **** **** " + last4
+	if len(clean) <= 4 {
+		return clean
+	}
+	masked := strings.Repeat("*", len(clean)-4) + clean[len(clean)-4:]
+	return groupBy4(masked)
+}
+
+func sanitizeAddBankCardInputs(inputs *[]textinput.Model) {
+	if inputs == nil || len(*inputs) < 6 {
+		return
+	}
+	(*inputs)[1].SetValue(trimDigitsToLimit((*inputs)[1].Value(), 16))
+	(*inputs)[3].SetValue(trimDigitsToLimit((*inputs)[3].Value(), 2))
+}
+
+func sanitizeEditBankCardInputs(inputs *[]textinput.Model) {
+	if inputs == nil || len(*inputs) < 8 {
+		return
+	}
+	(*inputs)[3].SetValue(trimDigitsToLimit((*inputs)[3].Value(), 16))
+	(*inputs)[5].SetValue(trimDigitsToLimit((*inputs)[5].Value(), 2))
+}
+
+func trimDigitsToLimit(value string, maxLen int) string {
+	var b strings.Builder
+	for _, r := range strings.TrimSpace(value) {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+			if maxLen > 0 && b.Len() >= maxLen {
+				break
+			}
+		}
+	}
+	return b.String()
+}
+
+func groupBy4(value string) string {
+	if value == "" {
+		return ""
+	}
+	var b strings.Builder
+	for i, r := range value {
+		if i > 0 && i%4 == 0 {
+			b.WriteRune(' ')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func isValidMonthMM(month string) bool {
+	if len(month) != 2 {
+		return false
+	}
+	v, err := strconv.Atoi(month)
+	if err != nil {
+		return false
+	}
+	return v >= 1 && v <= 12
 }
 
 func dataTypeLabel(t models.DataType) string {

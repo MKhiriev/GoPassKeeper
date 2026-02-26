@@ -49,7 +49,7 @@ func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if result, ok := msg.(LoginResult); ok {
 		m.submitting = false
 		if result.Err != nil {
-			m.errMsg = result.Err.Error()
+			m.errMsg = humanizeServerUnavailableError(result.Err)
 		}
 		return m, nil
 	}

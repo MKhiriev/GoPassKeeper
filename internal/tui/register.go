@@ -63,7 +63,7 @@ func (m *RegisterModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if result, ok := msg.(RegisterResult); ok {
 		m.submitting = false
 		if result.Err != nil {
-			m.errMsg = result.Err.Error()
+			m.errMsg = humanizeServerUnavailableError(result.Err)
 			return m, nil
 		}
 
