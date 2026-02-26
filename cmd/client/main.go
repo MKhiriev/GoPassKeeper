@@ -10,6 +10,7 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
 	"github.com/MKhiriev/go-pass-keeper/internal/store"
 	"github.com/MKhiriev/go-pass-keeper/internal/tui"
+	"github.com/MKhiriev/go-pass-keeper/models"
 )
 
 var (
@@ -47,7 +48,9 @@ func main() {
 		log.Fatal().Err(err).Msg("error creating ui")
 	}
 
-	app, err := client.NewApp(services, ui, cfg.Workers, log)
+	buildInfo := models.NewAppBuildInfo(buildVersion, buildDate, buildCommit)
+
+	app, err := client.NewApp(services, ui, cfg.Workers, buildInfo, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("init client app error")
 	}

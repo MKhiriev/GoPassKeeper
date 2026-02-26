@@ -6,6 +6,7 @@ import (
 
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
+	"github.com/MKhiriev/go-pass-keeper/models"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -20,7 +21,7 @@ func New(services *service.ClientServices, _ *logger.Logger) (*TUI, error) {
 	return &TUI{services: services}, nil
 }
 
-func (t *TUI) LoginFlow(ctx context.Context) (userID int64, encryptionKey []byte, err error) {
+func (t *TUI) LoginFlow(ctx context.Context, buildInfo models.AppBuildInfo) (userID int64, encryptionKey []byte, err error) {
 	clearSessionUserID()
 
 	pages := map[string]tea.Model{
@@ -29,7 +30,7 @@ func (t *TUI) LoginFlow(ctx context.Context) (userID int64, encryptionKey []byte
 		"register": NewRegisterModel(ctx, t.services.AuthService),
 	}
 
-	root := NewRootModel(pages, "menu")
+	root := NewRootModel(pages, "menu", buildInfo)
 	finalModel, runErr := tea.NewProgram(root, tea.WithAltScreen()).Run()
 	if runErr != nil {
 		return 0, nil, runErr
@@ -52,12 +53,12 @@ func (t *TUI) LoginFlow(ctx context.Context) (userID int64, encryptionKey []byte
 	return result.resultID, result.resultKey, nil
 }
 
-func (t *TUI) MainLoop(ctx context.Context, userID int64) (logout bool, err error) {
+func (t *TUI) MainLoop(ctx context.Context, userID int64, buildInfo models.AppBuildInfo) (logout bool, err error) {
 	if userID > 0 {
 		setSessionUserID(userID)
 	}
 
-	model := newMainLoopModel(ctx, t.services, userID)
+	model := newMainLoopModel(ctx, t.services, userID, buildInfo)
 	finalModel, runErr := tea.NewProgram(model, tea.WithAltScreen()).Run()
 	if runErr != nil {
 		return false, runErr

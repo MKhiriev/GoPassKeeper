@@ -29,10 +29,11 @@ const (
 )
 
 type mainLoopModel struct {
-	ctx      context.Context
-	services *service.ClientServices
-	userID   int64
-	debug    bool
+	ctx       context.Context
+	services  *service.ClientServices
+	userID    int64
+	debug     bool
+	buildInfo models.AppBuildInfo
 
 	items                 []models.DecipheredPayload
 	idx                   int
@@ -61,6 +62,7 @@ type mainLoopModel struct {
 	addTextArea    textarea.Model
 	addNotesArea   textarea.Model
 	addSaving      bool
+	showBuildInfo  bool
 
 	logout bool
 }
@@ -89,7 +91,7 @@ type createDoneMsg struct {
 var errUserIDNotSet = errors.New("user id не установлен")
 var errClientSideIDNotSet = errors.New("clientSideID не установлен")
 
-func newMainLoopModel(ctx context.Context, services *service.ClientServices, userID int64) mainLoopModel {
+func newMainLoopModel(ctx context.Context, services *service.ClientServices, userID int64, buildInfo models.AppBuildInfo) mainLoopModel {
 	effectiveUserID := userID
 	if effectiveUserID == 0 {
 		effectiveUserID = getSessionUserID()
@@ -99,11 +101,12 @@ func newMainLoopModel(ctx context.Context, services *service.ClientServices, use
 	}
 
 	return mainLoopModel{
-		ctx:      ctx,
-		services: services,
-		userID:   effectiveUserID,
-		debug:    isTUIDebugEnabled(),
-		loading:  true,
+		ctx:       ctx,
+		services:  services,
+		userID:    effectiveUserID,
+		debug:     isTUIDebugEnabled(),
+		buildInfo: buildInfo,
+		loading:   true,
 		addTypeOptions: []models.DataType{
 			models.LoginPassword,
 			models.Text,
@@ -193,6 +196,18 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch keyMsg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit
+	case "v":
+		if m.addStage == addStageNone && !m.editing && !m.detail {
+			m.showBuildInfo = !m.showBuildInfo
+			return m, nil
+		}
+	}
+
+	if m.showBuildInfo {
+		if keyMsg.String() == "esc" {
+			m.showBuildInfo = false
+		}
+		return m, nil
 	}
 
 	if m.addStage != addStageNone {
@@ -696,6 +711,10 @@ func (m *mainLoopModel) resetAddFlow() {
 }
 
 func (m mainLoopModel) View() string {
+	if m.showBuildInfo {
+		return renderBuildInfoWindow(m.buildInfo)
+	}
+
 	switch m.addStage {
 	case addStageType:
 		return m.viewAddType()
@@ -751,7 +770,7 @@ func (m mainLoopModel) View() string {
 
 	if m.loading {
 		out += "Загрузка списка...\n"
-		return renderPage("ГЛАВНАЯ СТРАНИЦА", strings.TrimRight(out, "\n"), "a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти")
+		return renderPage("ГЛАВНАЯ СТРАНИЦА", strings.TrimRight(out, "\n"), "a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти │ v: версия")
 	}
 
 	if m.errMsg != "" {
@@ -796,7 +815,7 @@ func (m mainLoopModel) View() string {
 	return renderPage(
 		"ГЛАВНАЯ СТРАНИЦА",
 		strings.TrimRight(out, "\n"),
-		"a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти",
+		"a: добавить │ s: синхр. │ enter: открыть │ e: изм. │ ctrl+d: уд. │ ↑/↓: нав. │ l: выйти │ v: версия",
 	)
 }
 

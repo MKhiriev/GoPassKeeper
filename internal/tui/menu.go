@@ -99,5 +99,5 @@ func (m *MenuModel) View() string {
 		b.WriteString(fmt.Sprintf("%-*s │ %-*s\n", idColWidth, idCell, actionColWidth, item))
 	}
 
-	return renderPage("ГЛАВНОЕ МЕНЮ", strings.TrimRight(b.String(), "\n"), "enter: выбрать │ ↑/↓: навигация")
+	return renderPage("ГЛАВНОЕ МЕНЮ", strings.TrimRight(b.String(), "\n"), "enter: выбрать │ ↑/↓: навигация │ v: версия")
 }
