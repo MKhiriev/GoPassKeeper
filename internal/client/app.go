@@ -58,11 +58,3 @@ func (a *App) Run() error {
 
 	return err
 }
-
-func getenv(key, fallback string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	return v
-}
