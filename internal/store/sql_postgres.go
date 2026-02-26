@@ -12,6 +12,13 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// NewConnectPostgres opens a PostgreSQL connection using the pgx stdlib driver
+// and the DSN supplied in cfg. It configures the connection pool, verifies
+// reachability with a ping, and returns a [DB] value wired to a
+// [PostgresErrorClassifier] for driver-level error classification.
+//
+// Returns an error if the driver cannot be opened, the ping fails, or the
+// connection string is invalid.
 func NewConnectPostgres(ctx context.Context, cfg config.DB, log *logger.Logger) (*DB, error) {
 	// establish connection
 	conn, err := sql.Open("pgx", cfg.DSN)

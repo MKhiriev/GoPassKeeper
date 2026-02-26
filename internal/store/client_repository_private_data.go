@@ -13,6 +13,9 @@ type localPrivateDataRepository struct {
 	logger *logger.Logger
 }
 
+// NewLocalPrivateDataRepository constructs a [LocalPrivateDataRepository]
+// backed by the provided SQLite [DB] connection. All query results are
+// structured-logged using logger.
 func NewLocalPrivateDataRepository(db *DB, logger *logger.Logger) LocalPrivateDataRepository {
 	return &localPrivateDataRepository{
 		DB:     db,
@@ -20,6 +23,12 @@ func NewLocalPrivateDataRepository(db *DB, logger *logger.Logger) LocalPrivateDa
 	}
 }
 
+// SavePrivateData implements [LocalPrivateDataRepository]. It upserts each item
+// in data into the local SQLite store under userID. Upsert semantics allow both
+// new records and server-downloaded updates to be stored without explicit
+// conflict handling in the caller.
+//
+// Returns an error wrapping the driver error if any upsert fails.
 func (l *localPrivateDataRepository) SavePrivateData(ctx context.Context, userID int64, data ...models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
@@ -51,6 +60,9 @@ func (l *localPrivateDataRepository) SavePrivateData(ctx context.Context, userID
 	return nil
 }
 
+// GetPrivateData implements [LocalPrivateDataRepository]. It returns the single
+// vault item identified by clientSideID and userID. Returns an error if the
+// item does not exist or if scanning the result row fails.
 func (l *localPrivateDataRepository) GetPrivateData(ctx context.Context, clientSideID string, userID int64) (models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
@@ -91,6 +103,9 @@ func (l *localPrivateDataRepository) GetPrivateData(ctx context.Context, clientS
 	return item, nil
 }
 
+// GetAllPrivateData implements [LocalPrivateDataRepository]. It returns all
+// vault items owned by userID, including soft-deleted records. Returns an error
+// if the query or any row-scan fails.
 func (l *localPrivateDataRepository) GetAllPrivateData(ctx context.Context, userID int64) ([]models.PrivateData, error) {
 	log := logger.FromContext(ctx)
 
@@ -145,6 +160,10 @@ func (l *localPrivateDataRepository) GetAllPrivateData(ctx context.Context, user
 	return items, nil
 }
 
+// GetAllStates implements [LocalPrivateDataRepository]. It returns lightweight
+// state descriptors (ClientSideID, Hash, Version, Deleted, UpdatedAt) for all
+// vault items owned by userID. Used by the sync planner to compare local and
+// server states without loading encrypted payloads.
 func (l *localPrivateDataRepository) GetAllStates(ctx context.Context, userID int64) ([]models.PrivateDataState, error) {
 	log := logger.FromContext(ctx)
 
@@ -192,6 +211,10 @@ func (l *localPrivateDataRepository) GetAllStates(ctx context.Context, userID in
 	return items, nil
 }
 
+// UpdatePrivateData implements [LocalPrivateDataRepository]. It overwrites the
+// stored vault item with the values in data, identified by data.ClientSideID
+// and data.UserID. The caller must populate Version, Hash, and UpdatedAt
+// before calling this method. Returns an error if the UPDATE fails.
 func (l *localPrivateDataRepository) UpdatePrivateData(ctx context.Context, data models.PrivateData) error {
 	log := logger.FromContext(ctx)
 
@@ -220,6 +243,10 @@ func (l *localPrivateDataRepository) UpdatePrivateData(ctx context.Context, data
 	return nil
 }
 
+// DeletePrivateData implements [LocalPrivateDataRepository]. It soft-deletes
+// the vault item identified by clientSideID and userID by setting its deleted
+// flag. The record is retained so that the sync service can propagate the
+// deletion to the server. Returns an error if the UPDATE fails.
 func (l *localPrivateDataRepository) DeletePrivateData(ctx context.Context, clientSideID string, userID int64) error {
 	log := logger.FromContext(ctx)
 
@@ -236,6 +263,11 @@ func (l *localPrivateDataRepository) DeletePrivateData(ctx context.Context, clie
 	return nil
 }
 
+// IncrementVersion implements [LocalPrivateDataRepository]. It increments the
+// version counter of the vault item identified by clientSideID and userID by
+// one. Called after a successful server-side write to keep the local record in
+// sync with the server version. Returns an error if no matching record is found
+// or if the UPDATE itself fails.
 func (l *localPrivateDataRepository) IncrementVersion(ctx context.Context, clientSideID string, userID int64) error {
 	log := logger.FromContext(ctx)
 

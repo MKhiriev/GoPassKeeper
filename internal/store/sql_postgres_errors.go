@@ -7,73 +7,98 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// ErrorClassification тип для классификации ошибок
+// ErrorClassification is the result type returned by [ErrorClassificator.Classify]
+// and [PostgresErrorClassifier.Classify]. It indicates whether a failed database
+// operation should be retried or abandoned.
 type ErrorClassification int
 
-// PostgresErrorClassifier классификатор ошибок PostgreSQL
+// PostgresErrorClassifier implements [ErrorClassificator] for PostgreSQL.
+// It inspects the pgconn error code returned by the pgx driver and maps it
+// to a [ErrorClassification] value.
 type PostgresErrorClassifier struct{}
 
 var (
+	// ErrNotFound is a sentinel error used when a queried resource does not
+	// exist in the database.
 	ErrNotFound = errors.New("metric is not found")
 )
 
 const (
-	// NonRetryable - операцию не следует повторять
+	// NonRetryable indicates that the failed operation should not be retried.
+	// This is the default classification for unrecognised errors, constraint
+	// violations, syntax errors, and data exceptions.
 	NonRetryable ErrorClassification = iota
 
-	// Retryable - операцию можно повторить
+	// Retryable indicates that the failed operation may succeed if attempted
+	// again (e.g. after a transient connection loss or a deadlock rollback).
 	Retryable
 )
 
+// NewPostgresErrorClassifier constructs a [PostgresErrorClassifier] ready for use.
 func NewPostgresErrorClassifier() *PostgresErrorClassifier {
 	return &PostgresErrorClassifier{}
 }
 
-// Classify классифицирует ошибку и возвращает ErrorClassification
+// Classify implements [ErrorClassificator]. It attempts to unwrap err as a
+// *pgconn.PgError and delegates to [ClassifyPgError]. If err is nil or is not
+// a PostgreSQL driver error, [NonRetryable] is returned.
 func (c *PostgresErrorClassifier) Classify(err error) ErrorClassification {
 	if err == nil {
 		return NonRetryable
 	}
 
-	// Проверяем и конвертируем в pgconn.PgError, если это возможно
+	// Attempt to unwrap to a pgconn.PgError.
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		return ClassifyPgError(pgErr)
 	}
 
-	// По умолчанию считаем ошибку неповторяемой
+	// Default: treat unrecognised errors as non-retryable.
 	return NonRetryable
 }
 
+// ClassifyPgError maps a *pgconn.PgError to an [ErrorClassification] based on
+// the PostgreSQL error code.
+// See https://www.postgresql.org/docs/current/errcodes-appendix.html for the
+// full list of PostgreSQL error codes.
+//
+// Retryable codes:
+//   - Class 08 — connection exceptions (08000, 08003, 08006)
+//   - Class 40 — transaction rollback, serialization failure, deadlock (40000, 40001, 40P01)
+//   - Class 57 — cannot connect now (57P03)
+//
+// NonRetryable codes:
+//   - Class 22 — data exceptions
+//   - Class 23 — integrity constraint violations
+//   - Class 42 — syntax errors and access rule violations
+//
+// Any code not listed above is classified as [NonRetryable].
 func ClassifyPgError(pgErr *pgconn.PgError) ErrorClassification {
-	// Коды ошибок PostgreSQL: https://www.postgresql.org/docs/current/errcodes-appendix.html
-
 	switch pgErr.Code {
-	// Класс 08 - Ошибки соединения
+	// Class 08 — connection exceptions
 	case pgerrcode.ConnectionException,
 		pgerrcode.ConnectionDoesNotExist,
 		pgerrcode.ConnectionFailure:
 		return Retryable
 
-	// Класс 40 - Откат транзакции
+	// Class 40 — transaction rollback
 	case pgerrcode.TransactionRollback, // 40000
 		pgerrcode.SerializationFailure, // 40001
 		pgerrcode.DeadlockDetected:     // 40P01
 		return Retryable
 
-	// Класс 57 - Ошибка оператора
+	// Class 57 — operator intervention
 	case pgerrcode.CannotConnectNow: // 57P03
 		return Retryable
 	}
 
-	// Можно добавить более конкретные проверки с использованием констант pgerrcode
 	switch pgErr.Code {
-	// Класс 22 - Ошибки данных
+	// Class 22 — data exceptions
 	case pgerrcode.DataException,
 		pgerrcode.NullValueNotAllowedDataException:
 		return NonRetryable
 
-	// Класс 23 - Нарушение ограничений целостности
+	// Class 23 — integrity constraint violations
 	case pgerrcode.IntegrityConstraintViolation,
 		pgerrcode.RestrictViolation,
 		pgerrcode.NotNullViolation,
@@ -82,7 +107,7 @@ func ClassifyPgError(pgErr *pgconn.PgError) ErrorClassification {
 		pgerrcode.CheckViolation:
 		return NonRetryable
 
-	// Класс 42 - Синтаксические ошибки
+	// Class 42 — syntax errors or access rule violations
 	case pgerrcode.SyntaxErrorOrAccessRuleViolation,
 		pgerrcode.SyntaxError,
 		pgerrcode.UndefinedColumn,
@@ -91,6 +116,6 @@ func ClassifyPgError(pgErr *pgconn.PgError) ErrorClassification {
 		return NonRetryable
 	}
 
-	// По умолчанию считаем ошибку неповторяемой
+	// Default: treat unrecognised codes as non-retryable.
 	return NonRetryable
 }

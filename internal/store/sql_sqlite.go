@@ -12,6 +12,14 @@ import (
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 )
 
+// NewConnectSQLite opens a SQLite connection to the file specified by cfg.DSN,
+// creating the file if it does not yet exist. It verifies reachability with a
+// ping and returns a [DB] value ready for use. Unlike the PostgreSQL variant,
+// no error classifier is attached because SQLite does not use pgconn error
+// codes.
+//
+// Returns an error if the database file cannot be created, the driver fails to
+// open, or the ping fails.
 func NewConnectSQLite(ctx context.Context, cfg config.ClientDB, log *logger.Logger) (*DB, error) {
 	// db will be in file
 	if err := createLocalDBFileIfNotExists(cfg.DSN); err != nil {

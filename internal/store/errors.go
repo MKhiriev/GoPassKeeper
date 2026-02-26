@@ -30,13 +30,39 @@ var (
 	ErrVersionConflict = errors.New("private data version conflict occurred")
 )
 
+// Low-level database operation errors. These are returned (or wrapped) by
+// repository methods when a SQL-level operation fails before any domain logic
+// can be applied.
 var (
-	ErrBuildingSQLQuery     = errors.New("error building sql query")
-	ErrExecutingQuery       = errors.New("error executing sql query")
+	// ErrBuildingSQLQuery is returned when constructing a parameterised SQL
+	// query fails (e.g. invalid argument count or unsupported type).
+	ErrBuildingSQLQuery = errors.New("error building sql query")
+
+	// ErrExecutingQuery is returned when executing a SELECT or similar
+	// read-only query against the database fails.
+	ErrExecutingQuery = errors.New("error executing sql query")
+
+	// ErrBeginningTransaction is returned when the database driver cannot
+	// start a new transaction.
 	ErrBeginningTransaction = errors.New("failed to begin transaction")
+
+	// ErrCommitingTransaction is returned when committing an open transaction
+	// fails. The transaction is considered rolled back at this point.
 	ErrCommitingTransaction = errors.New("failed to commit transaction")
-	ErrPreparingStatement   = errors.New("failed to prepare statement")
-	ErrExecutingStatement   = errors.New("failed to executing statement")
-	ErrScanningRow          = errors.New("failed to scan private data row")
-	ErrScanningRows         = errors.New("failed to scan private data rows")
+
+	// ErrPreparingStatement is returned when a SQL statement cannot be
+	// prepared (e.g. syntax error or connection issue).
+	ErrPreparingStatement = errors.New("failed to prepare statement")
+
+	// ErrExecutingStatement is returned when executing a prepared DML
+	// statement (INSERT, UPDATE, DELETE) fails.
+	ErrExecutingStatement = errors.New("failed to executing statement")
+
+	// ErrScanningRow is returned when scanning column values from a single
+	// result row into a destination struct fails.
+	ErrScanningRow = errors.New("failed to scan private data row")
+
+	// ErrScanningRows is returned when scanning column values during
+	// multi-row iteration fails, typically mid-result-set.
+	ErrScanningRows = errors.New("failed to scan private data rows")
 )
