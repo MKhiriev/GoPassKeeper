@@ -10,6 +10,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// RegisterModel is the Bubble Tea model for the registration screen. It renders five
+// text inputs (display name, username, password, password confirmation, and password
+// hint) and dispatches an async registration command on form submission.
+// On success a [RegisterResult] message is produced; the model then resets the form
+// and navigates back to the menu, passing a [RegisterSuccessNotice] payload.
 type RegisterModel struct {
 	ctx  context.Context
 	auth service.ClientAuthService
@@ -20,6 +25,8 @@ type RegisterModel struct {
 	errMsg     string
 }
 
+// NewRegisterModel creates a [RegisterModel] with five pre-configured text inputs.
+// The name field receives focus immediately; the password fields use masked echo.
 func NewRegisterModel(ctx context.Context, auth service.ClientAuthService) *RegisterModel {
 	fields := make([]textinput.Model, 5)
 
@@ -55,10 +62,21 @@ func NewRegisterModel(ctx context.Context, auth service.ClientAuthService) *Regi
 	}
 }
 
+// Init implements [tea.Model]. Starts the cursor-blink animation for the active input.
 func (m *RegisterModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// Update implements [tea.Model]. Handled messages:
+//   - [RegisterResult] — clears submitting state; on error, populates errMsg;
+//     on success, resets the form and navigates to the menu.
+//   - esc              — cancels and navigates back to the menu.
+//   - tab              — moves focus to the next input.
+//   - shift+tab        — moves focus to the previous input.
+//   - enter            — validates inputs (all required; passwords must match) and
+//     dispatches the async registration command.
+//
+// All other key events are forwarded to the focused input widget.
 func (m *RegisterModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if result, ok := msg.(RegisterResult); ok {
 		m.submitting = false
@@ -121,6 +139,8 @@ func (m *RegisterModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View implements [tea.Model]. Renders the registration form as a two-column table
+// with all five input fields, a submission indicator, and an optional error message.
 func (m *RegisterModel) View() string {
 	var b strings.Builder
 	b.WriteString("Поле           │ Значение\n")

@@ -5,11 +5,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// RootModel is a TUI router:
-// 1) keeps active page
-// 2) handles global Ctrl+C quit
-// 3) handles NavigateTo messages
-// 4) delegates all other messages to the active page
+// RootModel is the top-level TUI router used during the login/registration flow.
+// It is responsible for:
+//  1. Keeping track of the currently active page model.
+//  2. Handling the global Ctrl+C quit hotkey on every page.
+//  3. Intercepting [NavigateTo] messages and switching the active page accordingly.
+//  4. Delegating all other messages to the currently active page.
+//  5. Collecting the [LoginResult] that signals a successful authentication and
+//     terminating the Bubble Tea program with the authenticated user's data.
 type RootModel struct {
 	pages   map[string]tea.Model
 	current tea.Model
@@ -22,7 +25,8 @@ type RootModel struct {
 	showBuildInfo bool
 }
 
-// NewRootModel registers all pages and opens startPage.
+// NewRootModel creates a [RootModel] with the provided page map and sets startPage as
+// the initially active page. buildInfo is stored for optional display via the 'v' hotkey.
 func NewRootModel(pages map[string]tea.Model, startPage string, buildInfo models.AppBuildInfo) RootModel {
 	return RootModel{
 		pages:     pages,
@@ -31,6 +35,7 @@ func NewRootModel(pages map[string]tea.Model, startPage string, buildInfo models
 	}
 }
 
+// Init implements [tea.Model]. It delegates to the Init method of the currently active page.
 func (r RootModel) Init() tea.Cmd {
 	if r.current == nil {
 		return nil
@@ -38,6 +43,14 @@ func (r RootModel) Init() tea.Cmd {
 	return r.current.Init()
 }
 
+// Update implements [tea.Model]. It processes the following messages at the router level:
+//   - [tea.KeyMsg] "ctrl+c" — sets quitByUser and terminates the program.
+//   - [tea.KeyMsg] "v"      — toggles the build-info overlay when on the menu page.
+//   - [tea.KeyMsg] "esc"    — closes the build-info overlay.
+//   - [NavigateTo]          — switches the active page; optionally dispatches a payload.
+//   - [LoginResult]         — captures user ID and encryption key, then quits.
+//
+// All other messages are forwarded to the active page's Update method.
 func (r RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Global hotkey for every page.
 	if key, ok := msg.(tea.KeyMsg); ok {
@@ -98,6 +111,8 @@ func (r RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, cmd
 }
 
+// View implements [tea.Model]. It renders the build-info overlay when it is active,
+// otherwise delegates rendering to the current page's View method.
 func (r RootModel) View() string {
 	if r.showBuildInfo {
 		return renderBuildInfoWindow(r.buildInfo)

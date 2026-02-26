@@ -10,6 +10,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// LoginModel is the Bubble Tea model for the login screen. It renders two text inputs
+// (username and password) and dispatches an async login command on form submission.
+// On success a [LoginResult] message is produced and handled by [RootModel] to finish
+// the authentication flow.
 type LoginModel struct {
 	ctx  context.Context
 	auth service.ClientAuthService
@@ -20,6 +24,8 @@ type LoginModel struct {
 	errMsg     string
 }
 
+// NewLoginModel creates a [LoginModel] with pre-configured username and password inputs.
+// The username field receives focus immediately; the password field uses masked echo.
 func NewLoginModel(ctx context.Context, auth service.ClientAuthService) *LoginModel {
 	loginInput := textinput.New()
 	loginInput.Placeholder = "login"
@@ -41,10 +47,19 @@ func NewLoginModel(ctx context.Context, auth service.ClientAuthService) *LoginMo
 	}
 }
 
+// Init implements [tea.Model]. Starts the cursor-blink animation for the active input.
 func (m *LoginModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// Update implements [tea.Model]. Handled messages:
+//   - [LoginResult]  — clears submitting state; on error, populates errMsg.
+//   - esc            — cancels and navigates back to the menu.
+//   - tab            — moves focus to the next input.
+//   - shift+tab      — moves focus to the previous input.
+//   - enter          — validates inputs and dispatches the async login command.
+//
+// All other key events are forwarded to the focused input widget.
 func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if result, ok := msg.(LoginResult); ok {
 		m.submitting = false
@@ -90,6 +105,8 @@ func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View implements [tea.Model]. Renders the login form as a two-column table with
+// username and password inputs, a submission indicator, and an optional error message.
 func (m *LoginModel) View() string {
 	var b strings.Builder
 	b.WriteString("Поле    │ Значение\n")

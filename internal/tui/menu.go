@@ -8,6 +8,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// MenuModel is the Bubble Tea model for the main authentication menu. It presents
+// the user with two options — "Login" and "Register" — and navigates to the
+// corresponding page on selection.
 type MenuModel struct {
 	items     []string
 	idx       int
@@ -15,16 +18,23 @@ type MenuModel struct {
 	status    string
 }
 
+// NewMenuModel creates a [MenuModel] pre-populated with the login and register options.
 func NewMenuModel() *MenuModel {
 	return &MenuModel{
 		items: []string{"Войти", "Зарегистрироваться"},
 	}
 }
 
+// Init implements [tea.Model]. The menu requires no initial commands.
 func (m *MenuModel) Init() tea.Cmd {
 	return nil
 }
 
+// Update implements [tea.Model]. Handled messages:
+//   - [RegisterSuccessNotice] — stores a confirmation status line shown below the menu.
+//   - up / k                 — moves the cursor up.
+//   - down / j               — moves the cursor down.
+//   - enter                  — dispatches a [NavigateTo] message for the selected item.
 func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if notice, ok := msg.(RegisterSuccessNotice); ok {
 		if notice.Username != "" {
@@ -62,6 +72,8 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View implements [tea.Model]. It renders the menu as an aligned two-column table
+// (ID | Action) with an optional status line at the top and a hotkey hint at the bottom.
 func (m *MenuModel) View() string {
 	var b strings.Builder
 	idColWidth := lipgloss.Width("ID")
