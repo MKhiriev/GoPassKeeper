@@ -20,8 +20,8 @@ type clientAuthService struct {
 	crypto              crypto.KeyChainService
 }
 
-func NewClientAuthService(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter, crypto crypto.KeyChainService) ClientAuthService {
-	return &clientAuthService{localStore: localStore, adapter: serverAdapter, crypto: crypto}
+func NewClientAuthService(localStore *store.ClientStorages, serverAdapter adapter.ServerAdapter, crypto crypto.KeyChainService, cryptoSvc ClientCryptoService) ClientAuthService {
+	return &clientAuthService{localStore: localStore, adapter: serverAdapter, crypto: crypto, clientCryptoService: cryptoSvc}
 }
 
 func (a *clientAuthService) Register(ctx context.Context, user models.User) error {

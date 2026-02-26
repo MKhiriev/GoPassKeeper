@@ -99,7 +99,7 @@ func (r *userRepository) FindUserByLogin(ctx context.Context, user models.User) 
 	// scan found user from db
 	if err := row.Scan(&foundUser.UserID, &foundUser.Login, &foundUser.AuthHash, &foundUser.MasterPasswordHint, &foundUser.Name, &foundUser.CreatedAt, &foundUser.EncryptionSalt, &foundUser.EncryptedMasterKey); err != nil {
 		log.Err(err).Str("func", "*userRepository.CreateUser").Msg("error: scanning error")
-		return models.User{}, err
+		return models.User{}, ErrNoUserWasFound
 	}
 
 	return foundUser, nil

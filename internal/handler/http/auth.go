@@ -74,7 +74,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token.SignedString))
-	w.WriteHeader(http.StatusOK)
+	utils.WriteJSON(w, foundUser, http.StatusOK)
 }
 
 func (h *Handler) params(w http.ResponseWriter, r *http.Request) {

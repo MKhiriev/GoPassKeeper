@@ -1,0 +1,196 @@
+package tui
+
+import (
+	"context"
+	"strings"
+
+	"github.com/MKhiriev/go-pass-keeper/internal/service"
+	"github.com/MKhiriev/go-pass-keeper/models"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+type RegisterModel struct {
+	ctx  context.Context
+	auth service.ClientAuthService
+
+	inputs     []textinput.Model
+	focus      int
+	submitting bool
+	errMsg     string
+}
+
+func NewRegisterModel(ctx context.Context, auth service.ClientAuthService) *RegisterModel {
+	fields := make([]textinput.Model, 5)
+
+	fields[0] = textinput.New()
+	fields[0].Placeholder = "name"
+	fields[0].Width = 40
+	fields[0].Focus()
+
+	fields[1] = textinput.New()
+	fields[1].Placeholder = "login"
+	fields[1].Width = 40
+
+	fields[2] = textinput.New()
+	fields[2].Placeholder = "password"
+	fields[2].EchoMode = textinput.EchoPassword
+	fields[2].EchoCharacter = '*'
+	fields[2].Width = 40
+
+	fields[3] = textinput.New()
+	fields[3].Placeholder = "repeat password"
+	fields[3].EchoMode = textinput.EchoPassword
+	fields[3].EchoCharacter = '*'
+	fields[3].Width = 40
+
+	fields[4] = textinput.New()
+	fields[4].Placeholder = "hint"
+	fields[4].Width = 40
+
+	return &RegisterModel{
+		ctx:    ctx,
+		auth:   auth,
+		inputs: fields,
+	}
+}
+
+func (m *RegisterModel) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (m *RegisterModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if result, ok := msg.(RegisterResult); ok {
+		m.submitting = false
+		if result.Err != nil {
+			m.errMsg = result.Err.Error()
+			return m, nil
+		}
+
+		m.errMsg = ""
+		m.resetForm()
+		return m, func() tea.Msg {
+			return NavigateTo{
+				Page:    "menu",
+				Payload: RegisterSuccessNotice{Username: result.Username},
+			}
+		}
+	}
+
+	keyMsg, ok := msg.(tea.KeyMsg)
+	if ok {
+		switch keyMsg.String() {
+		case "esc":
+			m.submitting = false
+			m.errMsg = ""
+			return m, func() tea.Msg { return NavigateTo{Page: "menu"} }
+		case "tab":
+			m.focusNext()
+			return m, nil
+		case "shift+tab":
+			m.focusPrev()
+			return m, nil
+		case "enter":
+			if m.submitting {
+				return m, nil
+			}
+
+			name := strings.TrimSpace(m.inputs[0].Value())
+			login := strings.TrimSpace(m.inputs[1].Value())
+			pass := strings.TrimSpace(m.inputs[2].Value())
+			repeat := strings.TrimSpace(m.inputs[3].Value())
+			hint := strings.TrimSpace(m.inputs[4].Value())
+
+			if name == "" || login == "" || pass == "" || repeat == "" || hint == "" {
+				m.errMsg = "Все поля обязательны"
+				return m, nil
+			}
+			if pass != repeat {
+				m.errMsg = "Пароли не совпадают"
+				return m, nil
+			}
+
+			m.errMsg = ""
+			m.submitting = true
+			return m, m.cmdRegister(name, login, pass, hint)
+		}
+	}
+
+	var cmd tea.Cmd
+	m.inputs[m.focus], cmd = m.inputs[m.focus].Update(msg)
+	return m, cmd
+}
+
+func (m *RegisterModel) View() string {
+	var b strings.Builder
+	b.WriteString("Поле           │ Значение\n")
+	b.WriteString("───────────────┼────────────────────────────────────\n")
+	b.WriteString("Имя            │ [")
+	b.WriteString(m.inputs[0].View())
+	b.WriteString("]\n")
+	b.WriteString("Логин          │ [")
+	b.WriteString(m.inputs[1].View())
+	b.WriteString("]\n")
+	b.WriteString("Пароль         │ [")
+	b.WriteString(m.inputs[2].View())
+	b.WriteString("]\n")
+	b.WriteString("Повтор пароля  │ [")
+	b.WriteString(m.inputs[3].View())
+	b.WriteString("]\n")
+	b.WriteString("Подсказка      │ [")
+	b.WriteString(m.inputs[4].View())
+	b.WriteString("]\n")
+
+	if m.submitting {
+		b.WriteString("Действие       │ [Зарегистрироваться...]\n")
+	} else {
+		b.WriteString("Действие       │ [Зарегистрироваться]\n")
+	}
+
+	if m.errMsg != "" {
+		b.WriteString("Ошибка         │ ")
+		b.WriteString(m.errMsg)
+		b.WriteString("\n")
+	}
+
+	return renderPage("РЕГИСТРАЦИЯ", strings.TrimRight(b.String(), "\n"), "esc: назад │ tab: след. поле │ enter: подтвердить")
+}
+
+func (m *RegisterModel) cmdRegister(name, login, pass, hint string) tea.Cmd {
+	ctx := m.ctx
+	auth := m.auth
+
+	return func() tea.Msg {
+		err := auth.Register(ctx, models.User{
+			Name:               name,
+			Login:              login,
+			MasterPassword:     pass,
+			MasterPasswordHint: hint,
+		})
+		return RegisterResult{
+			Err:      err,
+			Username: login,
+		}
+	}
+}
+
+func (m *RegisterModel) resetForm() {
+	for i := range m.inputs {
+		m.inputs[i].SetValue("")
+		m.inputs[i].Blur()
+	}
+	m.focus = 0
+	m.inputs[m.focus].Focus()
+}
+
+func (m *RegisterModel) focusNext() {
+	m.inputs[m.focus].Blur()
+	m.focus = (m.focus + 1) % len(m.inputs)
+	m.inputs[m.focus].Focus()
+}
+
+func (m *RegisterModel) focusPrev() {
+	m.inputs[m.focus].Blur()
+	m.focus = (m.focus - 1 + len(m.inputs)) % len(m.inputs)
+	m.inputs[m.focus].Focus()
+}

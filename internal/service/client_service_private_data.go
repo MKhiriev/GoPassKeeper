@@ -73,7 +73,7 @@ func (p *clientPrivateDataService) GetAll(ctx context.Context, userID int64) ([]
 
 	decrypted := make([]models.DecipheredPayload, 0, len(items))
 	for _, item := range items {
-		payload, err := p.crypto.DecryptPayload(item.Payload) // TODO test
+		payload, err := p.crypto.DecryptPayload(item.Payload)
 		if err != nil {
 			return nil, fmt.Errorf("decrypt item %s: %w", item.ClientSideID, err)
 		}

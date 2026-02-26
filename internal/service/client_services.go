@@ -19,7 +19,7 @@ func NewClientServices(localStore *store.ClientStorages, serverAdapter adapter.S
 	keyChainService := crypto.NewKeyChainService()
 
 	cryptoSvc := NewClientCryptoService(keyChainService)
-	authSvc := NewClientAuthService(localStore, serverAdapter, keyChainService)
+	authSvc := NewClientAuthService(localStore, serverAdapter, keyChainService, cryptoSvc)
 	privateSvc := NewClientPrivateDataService(localStore, serverAdapter, cryptoSvc)
 	syncSvc := NewClientSyncService(localStore, serverAdapter)
 

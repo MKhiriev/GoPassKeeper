@@ -32,7 +32,7 @@ func newTestAuthSvc(
 
 	storages := &store.ClientStorages{}
 
-	svc := NewClientAuthService(storages, mockAdapter, mockKeyChain).(*clientAuthService)
+	svc := NewClientAuthService(storages, mockAdapter, mockKeyChain, mockCryptoSvc).(*clientAuthService)
 	svc.clientCryptoService = mockCryptoSvc
 
 	return svc, mockAdapter, mockKeyChain, mockCryptoSvc
@@ -342,7 +342,7 @@ func newIntegrationAuthSvc(
 	mockAdapter := mock.NewMockServerAdapter(ctrl)
 	cryptoSvc := NewClientCryptoService(keyChain)
 
-	svc := NewClientAuthService(&store.ClientStorages{}, mockAdapter, keyChain).(*clientAuthService)
+	svc := NewClientAuthService(&store.ClientStorages{}, mockAdapter, keyChain, cryptoSvc).(*clientAuthService)
 	svc.clientCryptoService = cryptoSvc
 
 	return svc, mockAdapter, cryptoSvc
