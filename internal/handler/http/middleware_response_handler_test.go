@@ -31,7 +31,7 @@ func TestResponseWriter_WriteHeader_CalledTwice_IgnoresSecond(t *testing.T) {
 	w := newResponseWriter(rr)
 
 	w.WriteHeader(http.StatusCreated)
-	w.WriteHeader(http.StatusInternalServerError) // должен быть проигнорирован
+	w.WriteHeader(http.StatusInternalServerError) // should be ignored
 
 	assert.Equal(t, http.StatusCreated, w.status)
 	assert.Equal(t, http.StatusCreated, rr.Code)
@@ -40,7 +40,7 @@ func TestResponseWriter_WriteHeader_CalledTwice_IgnoresSecond(t *testing.T) {
 func TestResponseWriter_WriteHeader_TableTest(t *testing.T) {
 	tests := []struct {
 		name           string
-		statusCodes    []int // несколько вызовов WriteHeader
+		statusCodes    []int // multiple WriteHeader calls
 		expectedStatus int
 	}{
 		{
@@ -129,7 +129,7 @@ func TestResponseWriter_Write_StoresLastBody(t *testing.T) {
 	_, _ = w.Write([]byte("first"))
 	_, _ = w.Write([]byte("second"))
 
-	// body хранит последний переданный срез
+	// body stores the most recently written byte slice.
 	assert.Equal(t, []byte("second"), w.body)
 }
 
@@ -142,7 +142,7 @@ func TestResponseWriter_Write_AfterExplicitWriteHeader(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 4, n)
-	assert.Equal(t, http.StatusAccepted, w.status) // статус не должен смениться на 200
+	assert.Equal(t, http.StatusAccepted, w.status) // status must not change to 200
 	assert.Equal(t, 4, w.size)
 }
 
@@ -155,17 +155,17 @@ func TestResponseWriter_Write_EmptyBody(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, n)
 	assert.Equal(t, 0, w.size)
-	assert.Equal(t, http.StatusOK, w.status) // WriteHeader всё равно вызван
+	assert.Equal(t, http.StatusOK, w.status) // WriteHeader is still called
 }
 
 func TestResponseWriter_Write_TableTest(t *testing.T) {
 	tests := []struct {
 		name         string
 		writes       [][]byte
-		explicitCode int // 0 — не вызывать WriteHeader явно
+		explicitCode int // 0 means do not call WriteHeader explicitly
 		wantStatus   int
 		wantSize     int
-		wantBody     []byte // последний write
+		wantBody     []byte // the last write
 	}{
 		{
 			name:       "single write, implicit 200",
@@ -228,7 +228,7 @@ func TestResponseWriter_Write_TableTest(t *testing.T) {
 	}
 }
 
-// ---- Начальное состояние ----
+// ---- Initial state ----
 
 func TestResponseWriter_InitialState(t *testing.T) {
 	rr := httptest.NewRecorder()
@@ -240,7 +240,7 @@ func TestResponseWriter_InitialState(t *testing.T) {
 	assert.Nil(t, w.body)
 }
 
-// ---- Проксирование к underlying ResponseWriter ----
+// ---- Proxying to underlying ResponseWriter ----
 
 func TestResponseWriter_ProxiesHeadersToUnderlying(t *testing.T) {
 	rr := httptest.NewRecorder()

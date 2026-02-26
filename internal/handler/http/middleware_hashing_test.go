@@ -119,7 +119,7 @@ func TestUploadHashing_TableTest(t *testing.T) {
 		},
 		{
 			name:           "hash mismatch - tampered data",
-			body:           makeUploadBody(t, validList, computeHash(t, emptyList)), // hash от пустого списка, но данные не пустые
+			body:           makeUploadBody(t, validList, computeHash(t, emptyList)), // hash is for an empty list while payload is non-empty
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -209,11 +209,11 @@ func TestUploadHashing_BodyRestoredForNextHandler(t *testing.T) {
 
 	var bodyReadByNext []byte
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Тело должно быть восстановлено middleware — читаем его дважды
+		// Middleware must restore the body; read it twice.
 		b1, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "first read failed")
 
-		// Второе чтение — должно вернуть пустоту (NopCloser не перематывается)
+		// Second read should be empty (NopCloser does not rewind).
 		b2, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "second read failed")
 		assert.Empty(t, b2, "second read should be empty")
@@ -366,7 +366,7 @@ func TestUpdateHashing_BodyRestoredForNextHandler(t *testing.T) {
 		b1, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "first read failed")
 
-		// Второе чтение — тело не перематывается, должно быть пустым
+		// Second read should be empty because the body is not rewound.
 		b2, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "second read failed")
 		assert.Empty(t, b2, "second read should be empty")

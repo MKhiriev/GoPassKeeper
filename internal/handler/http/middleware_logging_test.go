@@ -13,19 +13,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// injectLogger помещает zerolog.Logger в контекст запроса так,
-// как это делает withTraceID middleware (через zerolog/log.Ctx).
+// injectLogger puts zerolog.Logger into request context the same way
+// withTraceID middleware does (via zerolog/log.Ctx).
 func injectLogger(r *http.Request, l zerolog.Logger) *http.Request {
 	ctx := l.WithContext(r.Context())
 	return r.WithContext(ctx)
 }
 
-// newTestLogger создаёт логгер, пишущий в переданный буфер.
+// newTestLogger creates a logger that writes to the provided buffer.
 func newTestLogger(buf *bytes.Buffer) zerolog.Logger {
 	return zerolog.New(buf).With().Timestamp().Logger()
 }
 
-// makeRequest создаёт тестовый запрос с логгером в контексте.
+// makeRequest creates a test request with a logger in context.
 func makeRequest(method, path string, buf *bytes.Buffer) *http.Request {
 	req := httptest.NewRequest(method, path, nil)
 	l := newTestLogger(buf)
@@ -224,7 +224,7 @@ func TestWithLogging_ResponseSize(t *testing.T) {
 	assert.Contains(t, logOutput, `1024`, "log should contain correct size value")
 }
 
-// ---- No explicit WriteHeader — должен залогировать 200 ----
+// ---- No explicit WriteHeader should log 200 ----
 
 func TestWithLogging_NoStatusWritten(t *testing.T) {
 	var logBuf bytes.Buffer
@@ -243,7 +243,7 @@ func TestWithLogging_NoStatusWritten(t *testing.T) {
 	assert.Contains(t, logBuf.String(), `"status":200`)
 }
 
-// ---- Concurrent requests — гонок нет ----
+// ---- Concurrent requests: no races ----
 
 func TestWithLogging_ConcurrentRequests(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -295,7 +295,7 @@ func TestWithLogging_DurationAccuracy(t *testing.T) {
 	assert.Contains(t, logBuf.String(), `"duration":`)
 }
 
-// ---- Panic не подавляется ----
+// ---- Panic is not suppressed ----
 
 func TestWithLogging_PanicNotSuppressed(t *testing.T) {
 	var logBuf bytes.Buffer
@@ -313,7 +313,7 @@ func TestWithLogging_PanicNotSuppressed(t *testing.T) {
 	}, "withLogging should not recover panics")
 }
 
-// ---- logger.Nop() — middleware не падает без реального логгера ----
+// ---- logger.Nop(): middleware works without a real logger ----
 
 func TestWithLogging_NopLogger(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -321,7 +321,7 @@ func TestWithLogging_NopLogger(t *testing.T) {
 	})
 	middleware := withLogging(next)
 
-	// Кладём nop-логгер в контекст
+	// Put nop logger into request context.
 	nop := logger.Nop()
 	req := httptest.NewRequest(http.MethodGet, "/nop", nil)
 	ctx := nop.Logger.WithContext(req.Context())

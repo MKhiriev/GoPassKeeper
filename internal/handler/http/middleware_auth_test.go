@@ -25,7 +25,7 @@ func newHandlerWithAuthService(authSvc service.AuthService) *Handler {
 	}
 }
 
-// injectNopLogger кладёт nop-логгер в контекст запроса.
+// injectNopLogger puts a nop logger into request context.
 func injectNopLogger(r *http.Request) *http.Request {
 	nop := logger.Nop()
 	ctx := nop.Logger.WithContext(r.Context())
@@ -160,7 +160,7 @@ func TestAuth_Middleware_TableTest(t *testing.T) {
 			if tt.parseTokenFn != nil {
 				authSvc = &mockAuthService{parseTokenFn: tt.parseTokenFn}
 			} else {
-				// parseTokenFn не должна вызваться — header пустой или невалидный
+				// parseTokenFn must not be called when header is empty or invalid.
 				authSvc = &mockAuthService{parseTokenFn: func(_ context.Context, _ string) (models.Token, error) {
 					t.Fatal("ParseToken should not be called")
 					return models.Token{}, nil
@@ -189,7 +189,7 @@ func TestAuth_Middleware_TableTest(t *testing.T) {
 	}
 }
 
-// ---- Тело ответа при ошибках ----
+// ---- Error response bodies ----
 
 func TestAuth_ErrorResponseBodies(t *testing.T) {
 	h := newHandlerWithAuthService(&mockAuthService{
@@ -212,7 +212,7 @@ func TestAuth_ErrorResponseBodies(t *testing.T) {
 	})
 }
 
-// ---- UserID корректно кладётся в контекст ----
+// ---- UserID is correctly stored in context ----
 
 func TestAuth_UserIDInContext(t *testing.T) {
 	const expectedUserID int64 = 99
@@ -235,7 +235,7 @@ func TestAuth_UserIDInContext(t *testing.T) {
 	assert.Equal(t, expectedUserID, gotUserID)
 }
 
-// ---- Оригинальный контекст не мутируется ----
+// ---- Original context is not mutated ----
 
 func TestAuth_OriginalRequestNotMutated(t *testing.T) {
 	h := newHandlerWithAuthService(&mockAuthService{
@@ -260,7 +260,7 @@ func TestAuth_OriginalRequestNotMutated(t *testing.T) {
 	assert.Equal(t, originalCtx, req.Context(), "original request context must not be mutated")
 }
 
-// ---- Concurrent requests — нет гонок ----
+// ---- Concurrent requests: no races ----
 
 func TestAuth_ConcurrentRequests(t *testing.T) {
 	h := newHandlerWithAuthService(&mockAuthService{

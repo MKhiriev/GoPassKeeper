@@ -195,10 +195,10 @@ func TestInit_UnknownRoutes_Return404(t *testing.T) {
 	tests := []struct {
 		method  string
 		path    string
-		addAuth bool // некоторые пути защищены auth — нужен токен чтобы дойти до 404
+		addAuth bool // some paths are auth-protected and require a token to reach 404
 	}{
 		{http.MethodGet, "/api/nonexistent", false},
-		{http.MethodPost, "/api/data/unknown", true}, // /api/data/* защищён auth
+		{http.MethodPost, "/api/data/unknown", true}, // /api/data/* is protected by auth
 		{http.MethodGet, "/totally/wrong", false},
 		{http.MethodPatch, "/api/auth/register", false},
 	}
@@ -225,7 +225,7 @@ func TestInit_WrongMethod_Returns404NotMethodNotAllowed(t *testing.T) {
 		name    string
 		method  string
 		path    string
-		addAuth bool // маршруты под h.auth требуют токен чтобы дойти до MethodNotAllowed
+		addAuth bool // routes under h.auth require a token to reach MethodNotAllowed
 	}{
 		{
 			name:   "GET on /api/auth/register (POST only)",
@@ -246,13 +246,13 @@ func TestInit_WrongMethod_Returns404NotMethodNotAllowed(t *testing.T) {
 			name:    "DELETE on /api/data/all (GET only)",
 			method:  http.MethodDelete,
 			path:    "/api/data/all",
-			addAuth: true, // /api/data/* за auth middleware
+			addAuth: true, // /api/data/* is wrapped by auth middleware
 		},
 		{
 			name:    "GET on /api/data/update (PUT only)",
 			method:  http.MethodGet,
 			path:    "/api/data/update",
-			addAuth: true, // /api/data/* за auth middleware
+			addAuth: true, // /api/data/* is wrapped by auth middleware
 		},
 	}
 

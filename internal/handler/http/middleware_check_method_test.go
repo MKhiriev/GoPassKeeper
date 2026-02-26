@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// buildRouter создаёт минимальный chi.Mux с набором маршрутов для тестов.
-// Намеренно не используем реальный Handler.Init() — он требует services/logger.
+// buildRouter creates a minimal chi.Mux with a set of routes for tests.
+// It intentionally does not use Handler.Init() to avoid service/logger setup.
 func buildRouter() *chi.Mux {
 	router := chi.NewRouter()
 
@@ -47,7 +47,7 @@ func TestCheckHTTPMethod_TableTest(t *testing.T) {
 		path           string
 		expectedStatus int
 	}{
-		// Существующий маршрут + правильный метод → обработчик отвечает
+		// Existing route + valid method -> handler responds.
 		{
 			name:           "GET /api/items — registered, should pass through",
 			method:         http.MethodGet,
@@ -78,7 +78,7 @@ func TestCheckHTTPMethod_TableTest(t *testing.T) {
 			path:           "/api/resource",
 			expectedStatus: http.StatusNoContent,
 		},
-		// Существующий маршрут + неправильный метод → 404
+		// Existing route + invalid method -> 404.
 		{
 			name:           "DELETE /api/items — method not registered → 404",
 			method:         http.MethodDelete,
@@ -109,7 +109,7 @@ func TestCheckHTTPMethod_TableTest(t *testing.T) {
 			path:           "/api/users",
 			expectedStatus: http.StatusNotFound,
 		},
-		// Несуществующий маршрут — chi сам вернёт 404 (до MethodNotAllowed не дойдёт)
+		// Non-existing route: chi returns 404 before MethodNotAllowed.
 		{
 			name:           "GET /api/nonexistent — route does not exist",
 			method:         http.MethodGet,
@@ -128,7 +128,7 @@ func TestCheckHTTPMethod_TableTest(t *testing.T) {
 	}
 }
 
-// ---- Существующий маршрут с правильным методом — тело ответа доходит ----
+// ---- Existing route with valid method forwards response body ----
 
 func TestCheckHTTPMethod_PassThroughBody(t *testing.T) {
 	router := buildRouter()
@@ -141,7 +141,7 @@ func TestCheckHTTPMethod_PassThroughBody(t *testing.T) {
 	assert.Equal(t, "items", rr.Body.String())
 }
 
-// ---- Неправильный метод всегда возвращает 404, не 405 ----
+// ---- Invalid method always returns 404, not 405 ----
 
 func TestCheckHTTPMethod_WrongMethodReturns404NotMethodNotAllowed(t *testing.T) {
 	router := buildRouter()
@@ -166,7 +166,7 @@ func TestCheckHTTPMethod_WrongMethodReturns404NotMethodNotAllowed(t *testing.T) 
 	}
 }
 
-// ---- Маршрут с единственным методом — все остальные возвращают 404 ----
+// ---- Route with a single method returns 404 for all others ----
 
 func TestCheckHTTPMethod_SingleMethodRoute(t *testing.T) {
 	router := chi.NewRouter()
@@ -175,13 +175,13 @@ func TestCheckHTTPMethod_SingleMethodRoute(t *testing.T) {
 	})
 	router.MethodNotAllowed(CheckHTTPMethod(router))
 
-	// Единственный зарегистрированный метод проходит
+	// The only registered method should pass.
 	req := httptest.NewRequest(http.MethodGet, "/only-get", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	// Все остальные методы → 404
+	// All other methods should return 404.
 	for _, method := range []string{
 		http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodDelete, http.MethodOptions,
@@ -195,7 +195,7 @@ func TestCheckHTTPMethod_SingleMethodRoute(t *testing.T) {
 	}
 }
 
-// ---- Маршрут с несколькими методами — каждый из них проходит ----
+// ---- Route with multiple methods allows each registered one ----
 
 func TestCheckHTTPMethod_MultiMethodRoute(t *testing.T) {
 	router := chi.NewRouter()
@@ -230,7 +230,7 @@ func TestCheckHTTPMethod_MultiMethodRoute(t *testing.T) {
 	}
 }
 
-// ---- Concurrent requests — нет гонок ----
+// ---- Concurrent requests: no races ----
 
 func TestCheckHTTPMethod_ConcurrentRequests(t *testing.T) {
 	router := buildRouter()

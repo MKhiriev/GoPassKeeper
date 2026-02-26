@@ -1,8 +1,3 @@
-// Package http implements the HTTP transport layer of the application.
-// It provides middleware, route handlers, and request/response utilities
-// for the REST API. Authentication, logging, tracing, compression, and
-// integrity-checking concerns are all handled at this layer before
-// requests are forwarded to the service layer.
 package http
 
 import (

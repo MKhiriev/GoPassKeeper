@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTraceIDTestHandler создаёт Handler с nop-логгером (без вывода в stdout).
+// newTraceIDTestHandler creates a Handler with a nop logger (no stdout output).
 func newTraceIDTestHandler() *Handler {
 	return &Handler{logger: logger.Nop()}
 }
@@ -36,14 +36,14 @@ func executeWithTraceID(h *Handler, traceIDHeader string) (*httptest.ResponseRec
 	return rr, capturedReq
 }
 
-// ---- Таблица: заголовок ответа X-Trace-ID ----
+// ---- Table: X-Trace-ID response header ----
 
 func TestWithTraceID_TableTest(t *testing.T) {
 	tests := []struct {
 		name            string
 		requestTraceID  string
-		wantSameTraceID bool // true — ответный header должен совпасть с requestTraceID
-		wantValidUUID   bool // true — ответный header должен быть валидным UUID v4
+		wantSameTraceID bool // true means the response header must match requestTraceID
+		wantValidUUID   bool // true means the response header must be a valid UUID v4
 		wantNextCalled  bool
 		wantStatus      int
 	}{
@@ -114,7 +114,7 @@ func TestWithTraceID_TableTest(t *testing.T) {
 	}
 }
 
-// ---- Генерация уникальных trace ID при отсутствии заголовка ----
+// ---- Unique trace ID generation when header is absent ----
 
 func TestWithTraceID_GeneratesUniqueUUIDs(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -134,7 +134,7 @@ func TestWithTraceID_GeneratesUniqueUUIDs(t *testing.T) {
 	}
 }
 
-// ---- Trace ID попадает в контекст запроса ----
+// ---- Trace ID is propagated into request context ----
 
 func TestWithTraceID_TraceIDInContext(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -155,7 +155,7 @@ func TestWithTraceID_TraceIDInContext(t *testing.T) {
 		rr := httptest.NewRecorder()
 		middleware.ServeHTTP(rr, req)
 
-		// Логгер должен быть доступен из контекста (не nil, не паникует)
+		// Logger must be available from context (non-nil and no panic).
 		require.NotNil(t, ctxLogger)
 	})
 
@@ -177,7 +177,7 @@ func TestWithTraceID_TraceIDInContext(t *testing.T) {
 	})
 }
 
-// ---- Next handler всегда вызывается ----
+// ---- Next handler is always called ----
 
 func TestWithTraceID_AlwaysCallsNext(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -197,7 +197,7 @@ func TestWithTraceID_AlwaysCallsNext(t *testing.T) {
 	assert.Equal(t, http.StatusTeapot, rr.Code)
 }
 
-// ---- Заголовок X-Trace-ID всегда присутствует в ответе ----
+// ---- X-Trace-ID header is always present in response ----
 
 func TestWithTraceID_ResponseHeaderAlwaysSet(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -213,7 +213,7 @@ func TestWithTraceID_ResponseHeaderAlwaysSet(t *testing.T) {
 	})
 }
 
-// ---- Concurrent requests — нет гонок ----
+// ---- Concurrent requests: no races ----
 
 func TestWithTraceID_ConcurrentRequests(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -246,7 +246,7 @@ func TestWithTraceID_ConcurrentRequests(t *testing.T) {
 	assert.Len(t, seen, n, "all generated trace IDs should be unique")
 }
 
-// ---- Оригинальный запрос не мутируется ----
+// ---- Original request is not mutated ----
 
 func TestWithTraceID_OriginalRequestNotMutated(t *testing.T) {
 	h := newTraceIDTestHandler()
@@ -261,6 +261,6 @@ func TestWithTraceID_OriginalRequestNotMutated(t *testing.T) {
 	rr := httptest.NewRecorder()
 	middleware.ServeHTTP(rr, req)
 
-	// Контекст оригинального запроса не должен измениться
+	// The original request context must remain unchanged.
 	assert.Equal(t, originalCtx, req.Context(), "original request context should not be mutated")
 }
