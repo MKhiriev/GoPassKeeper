@@ -37,6 +37,7 @@ func NewRegisterModel(ctx context.Context, auth service.ClientAuthService) *Regi
 
 	fields[1] = textinput.New()
 	fields[1].Placeholder = "login"
+	fields[1].CharLimit = 20
 	fields[1].Width = 40
 
 	fields[2] = textinput.New()

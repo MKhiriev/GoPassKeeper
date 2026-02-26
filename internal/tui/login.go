@@ -29,7 +29,7 @@ type LoginModel struct {
 func NewLoginModel(ctx context.Context, auth service.ClientAuthService) *LoginModel {
 	loginInput := textinput.New()
 	loginInput.Placeholder = "login"
-	loginInput.CharLimit = 256
+	loginInput.CharLimit = 20
 	loginInput.Width = 40
 	loginInput.Focus()
 
