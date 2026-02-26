@@ -72,6 +72,12 @@ func (p *clientPrivateDataService) GetAll(ctx context.Context, userID int64) ([]
 		if err != nil {
 			return nil, fmt.Errorf("decrypt item %s: %w", item.ClientSideID, err)
 		}
+		payload.ClientSideID = item.ClientSideID
+		if item.UserID > 0 {
+			payload.UserID = item.UserID
+		} else {
+			payload.UserID = userID
+		}
 
 		decrypted = append(decrypted, payload)
 	}
@@ -88,6 +94,12 @@ func (p *clientPrivateDataService) Get(ctx context.Context, clientSideID string,
 	payload, err := p.crypto.DecryptPayload(item.Payload)
 	if err != nil {
 		return models.DecipheredPayload{}, fmt.Errorf("decrypt local item: %w", err)
+	}
+	payload.ClientSideID = item.ClientSideID
+	if item.UserID > 0 {
+		payload.UserID = item.UserID
+	} else {
+		payload.UserID = userID
 	}
 
 	return payload, nil

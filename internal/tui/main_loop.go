@@ -86,6 +86,7 @@ type createDoneMsg struct {
 }
 
 var errUserIDNotSet = errors.New("user id не установлен")
+var errClientSideIDNotSet = errors.New("clientSideID не установлен")
 
 func newMainLoopModel(ctx context.Context, services *service.ClientServices, userID int64) mainLoopModel {
 	effectiveUserID := userID
@@ -220,6 +221,10 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.startEdit(item)
 			return m, nil
 		case "ctrl+d":
+			if strings.TrimSpace(item.ClientSideID) == "" {
+				m.errMsg = fmt.Sprintf("Ошибка удаления: %v", errClientSideIDNotSet)
+				return m, nil
+			}
 			m.detail = false
 			m.detailRevealSensitive = false
 			return m, m.cmdDelete(item.ClientSideID)
@@ -277,6 +282,10 @@ func (m mainLoopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		item, ok := m.current()
 		if !ok {
 			m.status = "Нет записей"
+			return m, nil
+		}
+		if strings.TrimSpace(item.ClientSideID) == "" {
+			m.errMsg = fmt.Sprintf("Ошибка удаления: %v", errClientSideIDNotSet)
 			return m, nil
 		}
 		return m, m.cmdDelete(item.ClientSideID)
@@ -898,6 +907,9 @@ func (m mainLoopModel) cmdDelete(clientSideID string) tea.Cmd {
 	svc := m.services.PrivateDataService
 
 	return func() tea.Msg {
+		if strings.TrimSpace(clientSideID) == "" {
+			return deleteDoneMsg{err: errClientSideIDNotSet}
+		}
 		userID := m.activeUserID()
 		if userID <= 0 {
 			return deleteDoneMsg{err: errUserIDNotSet}

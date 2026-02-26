@@ -49,7 +49,7 @@ const (
 			hash,
 			deleted
 		FROM ciphers
-		WHERE user_id = $1;`
+		WHERE user_id = $1 AND deleted=false;`
 
 	getAllStates = `
 		SELECT

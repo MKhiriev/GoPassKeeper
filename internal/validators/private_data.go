@@ -306,7 +306,7 @@ func (v *PrivateDataValidator) validatePrivateDataUpdate(ctx context.Context, up
 				return ErrInvalidUpdatedRecordHash
 			}
 		case FieldVersion:
-			if update.Version <= 0 {
+			if update.Version < 0 {
 				return ErrInvalidUpdateVersion
 			}
 		default:
@@ -344,7 +344,7 @@ func (v *PrivateDataValidator) validateDeleteDataRequest(ctx context.Context, re
 				return ErrNoDeleteEntries
 			}
 			for _, deleteEntry := range request.DeleteEntries {
-				if deleteEntry.ClientSideID != "" {
+				if deleteEntry.ClientSideID == "" {
 					return ErrInvalidClientSideID
 				}
 				if deleteEntry.Version < 0 {
