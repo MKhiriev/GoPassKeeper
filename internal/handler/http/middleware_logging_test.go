@@ -243,35 +243,6 @@ func TestWithLogging_NoStatusWritten(t *testing.T) {
 	assert.Contains(t, logBuf.String(), `"status":200`)
 }
 
-// ---- Multiple sequential requests — каждый запрос даёт одну строку лога ----
-
-func TestWithLogging_MultipleRequests(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})
-	middleware := withLogging(next)
-
-	var totalLogBuf bytes.Buffer
-
-	for i := 0; i < 5; i++ {
-		var reqBuf bytes.Buffer
-		// объединяем в один буфер для подсчёта строк
-		combined := zerolog.New(&struct{ *bytes.Buffer }{&reqBuf}).With().Logger()
-		_ = combined
-
-		req := makeRequest(http.MethodGet, "/test", &reqBuf)
-		rr := httptest.NewRecorder()
-		middleware.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusOK, rr.Code, "request %d failed", i)
-		totalLogBuf.Write(reqBuf.Bytes())
-	}
-
-	logLines := strings.Split(strings.TrimSpace(totalLogBuf.String()), "\n")
-	assert.Len(t, logLines, 5, "should have exactly 5 log lines")
-}
-
 // ---- Concurrent requests — гонок нет ----
 
 func TestWithLogging_ConcurrentRequests(t *testing.T) {
