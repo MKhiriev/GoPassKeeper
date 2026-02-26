@@ -49,8 +49,8 @@ func Test_buildSelectAllUserDataQuery_SelectsAllExpectedColumns(t *testing.T) {
 
 	q := strings.ToLower(query)
 
-	// Проверяем, что все ожидаемые колонки упомянуты в SELECT-части.
-	// (Да, это "contains"-проверка; она не гарантирует порядок, но быстро ловит регрессии)
+	// Check that all expected columns are present in the SELECT section.
+	// This is a "contains" check; it does not enforce order but catches regressions quickly.
 	cols := []string{
 		"id",
 		"user_id",
@@ -83,7 +83,7 @@ func Test_buildSelectAllUserDataQuery(t *testing.T) {
 			userID:  42,
 			wantErr: false,
 			checkQuery: func(t *testing.T, query string, args []any) {
-				// Проверяем наличие всех 13 колонок
+				// Check that all 13 expected columns are present.
 				expectedColumns := []string{
 					"id", "user_id", "type", "metadata", "data",
 					"notes", "additional_fields", "created_at", "updated_at",
@@ -94,18 +94,18 @@ func Test_buildSelectAllUserDataQuery(t *testing.T) {
 						"query should contain column %q", col)
 				}
 
-				// Проверяем структуру запроса
+				// Check query structure.
 				assert.True(t, strings.Contains(strings.ToUpper(query), "SELECT"))
 				assert.True(t, strings.Contains(strings.ToUpper(query), "FROM"))
 				assert.True(t, strings.Contains(query, "ciphers"))
 				assert.True(t, strings.Contains(strings.ToUpper(query), "WHERE"))
 				assert.True(t, strings.Contains(query, "user_id"))
 
-				// Проверяем плейсхолдер ($1 для PostgreSQL)
+				// Check placeholder format ($1 for PostgreSQL).
 				assert.True(t, strings.Contains(query, "$1"),
 					"query should use $1 placeholder for PostgreSQL")
 
-				// Проверяем аргументы
+				// Check query arguments.
 				require.Len(t, args, 1)
 				assert.Equal(t, int64(42), args[0])
 			},
@@ -125,8 +125,8 @@ func Test_buildSelectAllUserDataQuery(t *testing.T) {
 			userID:  -1,
 			wantErr: false,
 			checkQuery: func(t *testing.T, query string, args []any) {
-				// buildSelectAllUserDataQuery не валидирует userID — это задача сервисного слоя
-				// функция должна просто построить запрос
+				// buildSelectAllUserDataQuery does not validate userID.
+				// Validation is a service-layer concern; this function only builds SQL.
 				require.Len(t, args, 1)
 				assert.Equal(t, int64(-1), args[0])
 			},
@@ -181,7 +181,7 @@ func Test_buildGetPrivateDataQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// Структура запроса
+				// Query structure.
 				require.Contains(t, q, "select")
 				require.Contains(t, q, "from ciphers")
 				require.Contains(t, q, "where")
@@ -190,11 +190,11 @@ func Test_buildGetPrivateDataQuery_SQLContainsParts(t *testing.T) {
 				// Postgres placeholder
 				require.Contains(t, query, "$1")
 
-				// client_side_id фильтр НЕ должен быть добавлен
+				// client_side_id filter must NOT be added.
 				require.NotContains(t, q, "client_side_id =")
 				require.NotContains(t, q, "client_side_id in")
 
-				// Ровно 1 аргумент — userID
+				// Exactly one argument: userID.
 				require.Len(t, args, 1)
 				require.Equal(t, int64(42), args[0])
 			},
@@ -214,11 +214,11 @@ func Test_buildGetPrivateDataQuery_SQLContainsParts(t *testing.T) {
 				require.Contains(t, q, "user_id")
 				require.Contains(t, q, "client_side_id")
 
-				// Два плейсхолдера: $1 (user_id), $2 (client_side_id)
+				// Two placeholders: $1 (user_id), $2 (client_side_id).
 				require.Contains(t, query, "$1")
 				require.Contains(t, query, "$2")
 
-				// Два аргумента
+				// Two arguments.
 				require.Len(t, args, 2)
 				require.Equal(t, int64(42), args[0])
 				require.Equal(t, "abc-123", args[1])
@@ -235,12 +235,12 @@ func Test_buildGetPrivateDataQuery_SQLContainsParts(t *testing.T) {
 
 				require.Contains(t, q, "client_side_id")
 
-				// squirrel генерирует IN ($2,$3,$4) для слайса
+				// squirrel generates IN ($2,$3,$4) for a slice.
 				require.Contains(t, query, "$2")
 				require.Contains(t, query, "$3")
 				require.Contains(t, query, "$4")
 
-				// 4 аргумента: userID + 3 client_side_id
+				// Four arguments: userID + 3 client_side_id values.
 				require.Len(t, args, 4)
 				require.Equal(t, int64(42), args[0])
 				require.Equal(t, "abc-123", args[1])
@@ -257,15 +257,15 @@ func Test_buildGetPrivateDataQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// Пустой слайс — фильтр по client_side_id не добавляется в WHERE.
-				// client_side_id присутствует в SELECT, поэтому проверяем только WHERE-часть.
+				// Empty slice: client_side_id filter is not added to WHERE.
+				// client_side_id is present in SELECT, so check only the WHERE section.
 				whereIdx := strings.Index(q, "where")
 				require.NotEqual(t, -1, whereIdx, "query should contain WHERE clause")
 				wherePart := q[whereIdx:]
 				require.NotContains(t, wherePart, "client_side_id",
 					"WHERE clause should not contain client_side_id filter for empty slice")
 
-				// Только 1 аргумент — userID
+				// Only one argument: userID.
 				require.Len(t, args, 1)
 				require.Equal(t, int64(42), args[0])
 			},
@@ -320,7 +320,7 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// Структура запроса
+				// Query structure.
 				require.Contains(t, q, "select")
 				require.Contains(t, q, "from ciphers")
 				require.Contains(t, q, "where")
@@ -329,14 +329,14 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 				// Postgres placeholder
 				require.Contains(t, query, "$1")
 
-				// WHERE не содержит фильтр по client_side_id
+				// WHERE must not contain a client_side_id filter.
 				whereIdx := strings.Index(q, "where")
 				require.NotEqual(t, -1, whereIdx)
 				wherePart := q[whereIdx:]
 				require.NotContains(t, wherePart, "client_side_id",
 					"WHERE clause should not contain client_side_id filter when ClientSideIDs is nil")
 
-				// Ровно 1 аргумент — userID
+				// Exactly one argument: userID.
 				require.Len(t, args, 1)
 				require.Equal(t, int64(42), args[0])
 			},
@@ -350,14 +350,14 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// Пустой слайс — фильтр по client_side_id не добавляется в WHERE
+				// Empty slice: client_side_id filter is not added to WHERE.
 				whereIdx := strings.Index(q, "where")
 				require.NotEqual(t, -1, whereIdx)
 				wherePart := q[whereIdx:]
 				require.NotContains(t, wherePart, "client_side_id",
 					"WHERE clause should not contain client_side_id filter for empty slice")
 
-				// Только 1 аргумент — userID
+				// Only one argument: userID.
 				require.Len(t, args, 1)
 				require.Equal(t, int64(42), args[0])
 			},
@@ -374,7 +374,7 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 				require.Contains(t, q, "where")
 				require.Contains(t, q, "user_id")
 
-				// WHERE содержит фильтр по client_side_id
+				// WHERE contains a client_side_id filter.
 				whereIdx := strings.Index(q, "where")
 				wherePart := q[whereIdx:]
 				require.Contains(t, wherePart, "client_side_id")
@@ -383,7 +383,7 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 				require.Contains(t, query, "$1")
 				require.Contains(t, query, "$2")
 
-				// 2 аргумента
+				// Two arguments.
 				require.Len(t, args, 2)
 				require.Equal(t, int64(42), args[0])
 				require.Equal(t, "abc-123", args[1])
@@ -398,17 +398,17 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// WHERE содержит IN-фильтр по client_side_id
+				// WHERE contains an IN filter by client_side_id.
 				whereIdx := strings.Index(q, "where")
 				wherePart := q[whereIdx:]
 				require.Contains(t, wherePart, "client_side_id")
 
-				// squirrel генерирует IN ($2,$3,$4)
+				// squirrel generates IN ($2,$3,$4).
 				require.Contains(t, query, "$2")
 				require.Contains(t, query, "$3")
 				require.Contains(t, query, "$4")
 
-				// 4 аргумента: userID + 3 client_side_id
+				// Four arguments: userID + 3 client_side_id values.
 				require.Len(t, args, 4)
 				require.Equal(t, int64(42), args[0])
 				require.Equal(t, "abc-123", args[1])
@@ -424,12 +424,12 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 			checkQuery: func(t *testing.T, query string, args []any) {
 				q := strings.ToLower(query)
 
-				// Извлекаем SELECT-часть (до FROM)
+				// Extract SELECT section (before FROM).
 				fromIdx := strings.Index(q, " from ")
 				require.NotEqual(t, -1, fromIdx)
 				selectPart := q[:fromIdx]
 
-				// Проверяем наличие ровно 5 нужных колонок
+				// Check that exactly the required 5 columns are present.
 				expectedCols := []string{
 					"client_side_id",
 					"hash",
@@ -442,11 +442,11 @@ func Test_buildGetStatesSyncQuery_SQLContainsParts(t *testing.T) {
 						"SELECT part should contain column %q", col)
 				}
 
-				// Убеждаемся, что это не SELECT *
+				// Ensure this is not SELECT *.
 				require.NotContains(t, selectPart, "*",
 					"query should not use SELECT *")
 
-				// Убеждаемся, что лишние колонки не попали в SELECT
+				// Ensure no extra columns are included in SELECT.
 				unexpectedCols := []string{"metadata", "data", "notes", "additional_fields"}
 				for _, col := range unexpectedCols {
 					require.NotContains(t, selectPart, col,

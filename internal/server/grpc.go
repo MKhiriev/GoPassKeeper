@@ -25,12 +25,14 @@ func newGRPCServer(handler *myGRPC.Handler, cfg config.Server, logger *logger.Lo
 	}
 }
 
+// RunServer starts the gRPC listener and serves incoming requests.
 func (g *grpcServer) RunServer() {
 	if err := g.server.Serve(g.gRPCNetListener); err != nil {
 		g.logger.Error().Msgf("gRPC server Serve: %v\n", err)
 	}
 }
 
+// Shutdown gracefully stops the gRPC server.
 func (g *grpcServer) Shutdown() {
 	g.logger.Info().Msg("GRPC server Shutdown")
 	g.server.GracefulStop()

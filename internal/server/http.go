@@ -26,15 +26,17 @@ func newHTTPServer(handler http.Handler, cfg config.Server, logger *logger.Logge
 	}
 }
 
+// RunServer starts the HTTP listener and serves incoming requests.
 func (h *httpServer) RunServer() {
 	if err := h.server.ListenAndServe(); err != nil {
 		h.logger.Debug().Msgf("HTTP server ListenAndServe: %v\n", err)
 	}
 }
 
+// Shutdown gracefully stops the HTTP server.
 func (h *httpServer) Shutdown() {
 	if err := h.server.Shutdown(context.Background()); h.server != nil && err != nil {
-		// ошибки закрытия Listener
+		// Listener shutdown errors.
 		h.logger.Error().Msgf("HTTP server Shutdown: %v\n", err)
 	}
 }

@@ -17,6 +17,18 @@ type server struct {
 	logger     *logger.Logger
 }
 
+// NewServer builds a composite [Server] that may include HTTP and/or gRPC
+// transports depending on cfg.
+//
+// Transport creation rules:
+//   - HTTP server is created when cfg.HTTPAddress is non-empty.
+//   - gRPC server is created when cfg.GRPCAddress is non-empty.
+//
+// At least one transport address must be configured. If both are empty,
+// [errNoServersAreCreated] is returned.
+//
+// The returned value coordinates startup and graceful shutdown for all
+// configured transports and handles process termination signals.
 func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Logger) (Server, error) {
 	logger.Info().Msg("creating new server...")
 	servers := new(server)
@@ -37,12 +49,14 @@ func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Log
 	return servers, nil
 }
 
+// RunServer starts all configured transports and blocks until shutdown.
 func (s *server) RunServer() {
 	if err := s.run(); err != nil {
 		s.logger.Info().Msgf("Error running server: %v \n", err)
 	}
 }
 
+// Shutdown gracefully stops all configured transports.
 func (s *server) Shutdown() {
 	// finish HTTP server
 	if s.httpServer != nil {

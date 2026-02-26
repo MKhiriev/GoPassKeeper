@@ -74,10 +74,10 @@ func TestNewPrivateDataStorage_WithoutFileStorage(t *testing.T) {
 	sqlDB, _ := newTestDB(t)
 	db := newDBFromSQL(sqlDB)
 
-	// Передаем пустую конфигурацию
+	// Pass empty configuration.
 	storage := NewPrivateDataStorage(db, config.Storage{}, log)
 
-	// Если падает здесь, значит NewPrivateDataStorage вернула nil
+	// If this fails, NewPrivateDataStorage returned nil.
 	require.NotNil(t, storage)
 
 	s, ok := storage.(*privateDataStorage)

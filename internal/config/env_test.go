@@ -98,8 +98,8 @@ func TestParseEnv_EmptyEnv(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 
-	// В этой версии структуры все вложенные поля — НЕ указатели,
-	// поэтому "пустота" выражается нулевыми значениями.
+	// In this version all nested fields are non-pointer values,
+	// so "empty" state is represented by zero values.
 	assert.Equal(t, "", cfg.JSONFilePath)
 
 	assert.Equal(t, App{}, cfg.App)
@@ -156,7 +156,7 @@ func TestParseEnv_InvalidDuration(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	// Формулировка ошибки зависит от реализации parseEnv, проверим мягко:
+	// Error wording may vary depending on parseEnv internals; assert loosely.
 	assert.Contains(t, err.Error(), "env")
 }
 

@@ -1,5 +1,3 @@
-// Package config provides application configuration loading and merging
-// utilities for the go-pass-keeper application.
 package config
 
 import (

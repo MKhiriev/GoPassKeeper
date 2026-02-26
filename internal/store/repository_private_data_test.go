@@ -29,7 +29,7 @@ func newTestDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
 	return db, mock
 }
 
-// NewDBFromSQL создаёт DB из существующего *sql.DB (для тестов).
+// newDBFromSQL creates DB from an existing *sql.DB (for tests).
 func newDBFromSQL(db *sql.DB) *DB {
 	return &DB{
 		DB:                 db,
@@ -62,8 +62,8 @@ type privateDataRow struct {
 	dataType         models.DataType
 	metadata         models.CipheredMetadata
 	data             models.CipheredData
-	notes            driver.Value // *models.CipheredNotes или nil
-	additionalFields driver.Value // *models.CipheredCustomFields или nil
+	notes            driver.Value // *models.CipheredNotes or nil
+	additionalFields driver.Value // *models.CipheredCustomFields or nil
 	createdAt        *time.Time
 	updatedAt        *time.Time
 	version          int64
@@ -469,7 +469,7 @@ func TestGetAllPrivateData(t *testing.T) {
 					{
 						id: 4, userID: 42,
 						dataType: models.Text, metadata: "enc_meta4", data: "enc_data4",
-						createdAt: nil, updatedAt: nil, // оба NULL
+						createdAt: nil, updatedAt: nil, // both NULL
 						version: 2, clientSideID: "cid-4", hash: "hash4",
 					},
 				},
@@ -1113,8 +1113,8 @@ func TestUpdateSingleRecord(t *testing.T) {
 	}
 
 	type want struct {
-		err     error  // для errors.Is
-		errWrap string // для Contains
+		err     error  // for errors.Is checks
+		errWrap string // for string Contains checks
 		noErr   bool
 	}
 
@@ -1290,7 +1290,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		return context.WithValue(ctx, utils.UserIDCtxKey, uid)
 	}
 
-	// Запись, которая "уже есть в БД"
+	// Record that already exists in DB.
 	// id=10, user_id=42, version=5, hash="old-hash", client_side_id="cid-existing"
 
 	buildExpectedQuery := func(setClauses, versionPlaceholder string) string {
@@ -1308,7 +1308,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		repo := newTestRepo(t, db).(*privateDataRepository)
 		ctx := testContextWithUser(userID)
 
-		// Сначала убедимся что запись есть — мокаем SELECT для GetPrivateData
+		// First, verify the record exists by mocking SELECT for GetPrivateData.
 		selectRows := sqlmock.NewRows(privateDataColumns).
 			AddRow(
 				int64(10), int64(42), models.LoginPassword, "old_meta", "old_data", nil, nil,
@@ -1318,7 +1318,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 			WithArgs(int64(42), "cid-existing").
 			WillReturnRows(selectRows)
 
-		// Выполняем GetPrivateData — запись существует с version=5
+		// Execute GetPrivateData: record exists with version=5.
 		existing, err := repo.GetPrivateData(ctx, models.DownloadRequest{
 			UserID:        userID,
 			ClientSideIDs: []string{"cid-existing"},
@@ -1329,7 +1329,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		assert.Equal(t, int64(5), existing[0].Version)
 		assert.Equal(t, "old-hash", existing[0].Hash)
 
-		// Теперь обновляем — version=5 совпадает с БД, UPDATE пройдёт
+		// Now update: version=5 matches DB, UPDATE should succeed.
 		updatedID := int64(10)
 		dbVersion := int64(5)
 
@@ -1340,7 +1340,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 
 		updateRows := sqlmock.NewRows(cteColumns).
 			AddRow(
-				driver.Value(&updatedID), // updated_id != nil → UPDATE сработал
+				driver.Value(&updatedID), // updated_id != nil -> UPDATE succeeded
 				driver.Value(&dbVersion), // current_db_version = 5
 			)
 		mock.ExpectQuery(regexp.QuoteMeta(query)).
@@ -1349,7 +1349,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 
 		err = repo.updateSingleRecord(ctx, models.PrivateDataUpdate{
 			ClientSideID:      "cid-existing",
-			Version:           5, // совпадает с version в БД
+			Version:           5, // matches version in DB
 			UpdatedRecordHash: "new-hash",
 			FieldsUpdate: models.FieldsUpdate{
 				Metadata: ptrMeta("new_meta"),
@@ -1357,7 +1357,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Мокаем повторный SELECT — версия должна быть 6, хэш обновлён
+		// Mock repeated SELECT: version must be 6 and hash updated.
 		selectAfterRows := sqlmock.NewRows(privateDataColumns).
 			AddRow(
 				int64(10), int64(42), models.LoginPassword, "new_meta", "old_data", nil, nil,
@@ -1385,7 +1385,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		repo := newTestRepo(t, db).(*privateDataRepository)
 		ctx := testContextWithUser(userID)
 
-		// Запись есть в БД с version=5
+		// Record exists in DB with version=5.
 		selectRows := sqlmock.NewRows(privateDataColumns).
 			AddRow(
 				int64(10), int64(42), models.LoginPassword, "old_meta", "old_data", nil, nil,
@@ -1404,7 +1404,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		require.Len(t, existing, 1)
 		assert.Equal(t, int64(5), existing[0].Version)
 
-		// Пытаемся обновить с version=3 — не совпадает с БД (5)
+		// Attempt update with version=3: does not match DB (5).
 		dbVersion := int64(5)
 
 		query := buildExpectedQuery(
@@ -1414,8 +1414,8 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 
 		updateRows := sqlmock.NewRows(cteColumns).
 			AddRow(
-				driver.Value((*int64)(nil)), // updated_id = NULL → UPDATE не сработал
-				driver.Value(&dbVersion),    // current_db_version = 5 → запись есть
+				driver.Value((*int64)(nil)), // updated_id = NULL -> UPDATE did not affect row
+				driver.Value(&dbVersion),    // current_db_version = 5 -> record exists
 			)
 		mock.ExpectQuery(regexp.QuoteMeta(query)).
 			WithArgs("cid-existing", userID, "new_meta", "new-hash", int64(3)).
@@ -1423,7 +1423,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 
 		err = repo.updateSingleRecord(ctx, models.PrivateDataUpdate{
 			ClientSideID:      "cid-existing",
-			Version:           3, // НЕ совпадает с version=5 в БД
+			Version:           3, // does NOT match version=5 in DB
 			UpdatedRecordHash: "new-hash",
 			FieldsUpdate: models.FieldsUpdate{
 				Metadata: ptrMeta("new_meta"),
@@ -1432,7 +1432,7 @@ func TestUpdateSingleRecord_WithExistingRecord(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), ErrVersionConflict.Error())
 
-		// Проверяем что запись не изменилась — version по-прежнему 5
+		// Verify record remained unchanged: version is still 5.
 		selectAfterRows := sqlmock.NewRows(privateDataColumns).
 			AddRow(
 				int64(10), int64(42), models.LoginPassword, "old_meta", "old_data", nil, nil,
@@ -1619,20 +1619,20 @@ func TestUpdateMultipleRecords(t *testing.T) {
 			},
 			{
 				ClientSideID:      "cid-2",
-				Version:           1, // БД имеет version=3 → конфликт
+				Version:           1, // DB has version=3 -> conflict
 				UpdatedRecordHash: "h2",
 			},
 		}
 
 		mock.ExpectBegin()
 
-		// Первый UPDATE — успех
+		// First UPDATE: success.
 		r1 := sqlmock.NewRows(cteColumns).AddRow(driver.Value(&id1), driver.Value(&ver5))
 		mock.ExpectQuery(regexp.QuoteMeta(hashOnlyQuery)).
 			WithArgs("cid-1", userID, "h1", int64(5)).
 			WillReturnRows(r1)
 
-		// Второй UPDATE — version mismatch: updatedID=NULL, currentDBVersion=3
+		// Second UPDATE: version mismatch (updatedID=NULL, currentDBVersion=3).
 		r2 := sqlmock.NewRows(cteColumns).AddRow(driver.Value((*int64)(nil)), driver.Value(&ver3))
 		mock.ExpectQuery(regexp.QuoteMeta(hashOnlyQuery)).
 			WithArgs("cid-2", userID, "h2", int64(1)).
@@ -1667,7 +1667,7 @@ func TestUpdateMultipleRecords(t *testing.T) {
 
 		mock.ExpectBegin()
 
-		// Первый UPDATE — запись не найдена: оба NULL
+		// First UPDATE: record not found (both values are NULL).
 		r1 := sqlmock.NewRows(cteColumns).AddRow(driver.Value((*int64)(nil)), driver.Value((*int64)(nil)))
 		mock.ExpectQuery(regexp.QuoteMeta(hashOnlyQuery)).
 			WithArgs("cid-missing", userID, "h", int64(1)).

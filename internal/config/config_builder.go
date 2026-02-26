@@ -1,15 +1,3 @@
-// Package config provides application configuration loading and merging
-// utilities for the go-pass-keeper application.
-//
-// Configuration is assembled from multiple sources in the following priority
-// order (last source wins for non-zero fields):
-//  1. Environment variables  — loaded via [withEnv]
-//  2. Command-line flags     — loaded via [withFlags]
-//  3. JSON file              — loaded via [withJSON], path resolved from the
-//     sources above
-//
-// The entry point for production use is [GetStructuredConfig], which chains
-// all three sources and validates the result.
 package config
 
 import (
