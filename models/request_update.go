@@ -1,7 +1,11 @@
 package models
 
+// UpdateRequest represents a batch partial-update operation for vault items.
+//
+// Each entry in [PrivateDataUpdates] applies optimistic locking independently
+// using its own version value.
 type UpdateRequest struct {
-	// UserID is the owner of the data to delete.
+	// UserID is the owner of the data to update.
 	UserID int64 `json:"user_id"`
 
 	// PrivateDataUpdates is a list of items to update.
@@ -22,7 +26,7 @@ type PrivateDataUpdate struct {
 	// Used to correlate server records with local client state.
 	ClientSideID string `json:"client_side_id,omitempty"`
 
-	// FieldsUpdate contains a set of fields needed to update
+	// FieldsUpdate contains the subset of fields to update.
 	FieldsUpdate FieldsUpdate `json:"fields_update"`
 
 	// Hash of the full PrivateData record in ciphers table AFTER applying updates — new value for DB.
@@ -33,6 +37,8 @@ type PrivateDataUpdate struct {
 	Version int64 `json:"version"`
 }
 
+// FieldsUpdate describes optional field-level changes for a single vault item.
+// Nil fields are ignored and left unchanged by the update operation.
 type FieldsUpdate struct {
 	// Metadata contains updated non-sensitive descriptive information.
 	// If nil, the field will not be updated.
