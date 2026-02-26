@@ -55,11 +55,6 @@ func (p *clientPrivateDataService) Create(ctx context.Context, userID int64, pla
 
 	if err = p.adapter.Upload(ctx, models.UploadRequest{UserID: userID, PrivateDataList: []*models.PrivateData{&item}}); err != nil {
 		return fmt.Errorf("upload created item to server: %w", err)
-	} else {
-		incrementErr := p.localStore.PrivateDataRepository.IncrementVersion(ctx, clientSideID, userID)
-		if incrementErr != nil {
-			return fmt.Errorf("error incrementing version locally: %w", incrementErr)
-		}
 	}
 
 	return nil

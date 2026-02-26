@@ -55,7 +55,6 @@ func TestClientPrivateDataService_Create_Success(t *testing.T) {
 	mockCrypto.EXPECT().ComputeHash(encPayload).Return("hash123", nil)
 	mockRepo.EXPECT().SavePrivateData(ctx, userID, gomock.Any()).Return(nil)
 	mockAdapter.EXPECT().Upload(ctx, gomock.Any()).Return(nil)
-	mockRepo.EXPECT().IncrementVersion(ctx, gomock.Any(), userID).Return(nil)
 
 	err := svc.Create(ctx, userID, plain)
 	require.NoError(t, err)
@@ -131,27 +130,6 @@ func TestClientPrivateDataService_Create_UploadError(t *testing.T) {
 	err := svc.Create(ctx, userID, plain)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upload created item to server")
-}
-
-func TestClientPrivateDataService_Create_IncrementVersionError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	svc, mockRepo, mockAdapter, mockCrypto := newTestPrivateDataSvc(t, ctrl)
-	ctx := context.Background()
-	userID := int64(1)
-	plain := models.DecipheredPayload{UserID: userID}
-	encPayload := models.PrivateDataPayload{}
-
-	mockCrypto.EXPECT().EncryptPayload(plain).Return(encPayload, nil)
-	mockCrypto.EXPECT().ComputeHash(encPayload).Return("hash", nil)
-	mockRepo.EXPECT().SavePrivateData(ctx, userID, gomock.Any()).Return(nil)
-	mockAdapter.EXPECT().Upload(ctx, gomock.Any()).Return(nil)
-	mockRepo.EXPECT().IncrementVersion(ctx, gomock.Any(), userID).Return(errors.New("increment fail"))
-
-	err := svc.Create(ctx, userID, plain)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error incrementing version locally")
 }
 
 // ── GetAll ───────────────────────────────────────────────────────────────────
