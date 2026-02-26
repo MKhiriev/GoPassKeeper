@@ -8,6 +8,11 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// mapHTTPError converts a resty HTTP response into an error value. It returns
+// nil for any 2xx status code. For known error codes it wraps the corresponding
+// sentinel (e.g. [ErrConflict] for 409) with the trimmed response body as
+// additional context. For unrecognised non-2xx codes it returns a plain
+// "http <code>: <body>" error.
 func mapHTTPError(resp *resty.Response) error {
 	if resp.StatusCode() >= http.StatusOK && resp.StatusCode() < http.StatusMultipleChoices {
 		return nil
