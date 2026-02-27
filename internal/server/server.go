@@ -13,8 +13,8 @@ import (
 
 type server struct {
 	httpServer *httpServer
-	gRPCServer *grpcServer
-	logger     *logger.Logger
+	//gRPCServer *grpcServer
+	logger *logger.Logger
 }
 
 // NewServer builds a composite [Server] that may include HTTP and/or gRPC
@@ -36,11 +36,11 @@ func NewServer(handlers *handler.Handlers, cfg config.Server, logger *logger.Log
 	if cfg.HTTPAddress != "" {
 		servers.httpServer = newHTTPServer(handlers.HTTP.Init(), cfg, logger)
 	}
-	if cfg.GRPCAddress != "" {
-		servers.gRPCServer = newGRPCServer(handlers.GRPC, cfg, logger)
-	}
+	//if cfg.GRPCAddress != "" {
+	//	servers.gRPCServer = newGRPCServer(handlers.GRPC, cfg, logger)
+	//}
 
-	if servers.httpServer == nil && servers.gRPCServer == nil {
+	if servers.httpServer == nil /*&& servers.gRPCServer == nil*/ {
 		return nil, errNoServersAreCreated
 	}
 
@@ -64,14 +64,14 @@ func (s *server) Shutdown() {
 	}
 
 	// finish gRPC server
-	if s.gRPCServer != nil {
-		s.gRPCServer.Shutdown()
-	}
+	//if s.gRPCServer != nil {
+	//	s.gRPCServer.Shutdown()
+	//}
 }
 
 func (s *server) run() error {
 	// check if any server was created
-	if s.httpServer == nil && s.gRPCServer == nil {
+	if s.httpServer == nil /*&& s.gRPCServer == nil*/ {
 		return errors.New("no servers to run")
 	}
 
@@ -99,10 +99,10 @@ func (s *server) run() error {
 		s.logger.Info().Msg("Launching HTTP server")
 		go s.httpServer.RunServer()
 	}
-	if s.gRPCServer != nil {
-		s.logger.Info().Msg("Launching GRPC server")
-		go s.gRPCServer.RunServer()
-	}
+	//if s.gRPCServer != nil {
+	//	s.logger.Info().Msg("Launching GRPC server")
+	//	go s.gRPCServer.RunServer()
+	//}
 
 	<-idleConnectionsClosed
 	s.logger.Info().Msg("server Shutdown gracefully")

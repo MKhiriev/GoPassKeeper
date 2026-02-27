@@ -7,7 +7,6 @@ package handler
 
 import (
 	"github.com/MKhiriev/go-pass-keeper/internal/config"
-	"github.com/MKhiriev/go-pass-keeper/internal/handler/grpc"
 	"github.com/MKhiriev/go-pass-keeper/internal/handler/http"
 	"github.com/MKhiriev/go-pass-keeper/internal/logger"
 	"github.com/MKhiriev/go-pass-keeper/internal/service"
@@ -23,7 +22,7 @@ type Handlers struct {
 
 	// GRPC contains the initialized gRPC handler if gRPC is enabled in the
 	// configuration. If gRPC is disabled, this field remains nil.
-	GRPC *grpc.Handler
+	//GRPC *grpc.Handler
 }
 
 // NewHandlers constructs the Handlers bundle from the provided service layer,
@@ -48,11 +47,11 @@ func NewHandlers(services *service.Services, cfg config.Server, logger *logger.L
 	if cfg.HTTPAddress != "" {
 		handlers.HTTP = http.NewHandler(services, logger)
 	}
-	if cfg.GRPCAddress != "" {
-		handlers.GRPC = grpc.NewHandler(services, logger)
-	}
+	//if cfg.GRPCAddress != "" {
+	//	handlers.GRPC = grpc.NewHandler(services, logger)
+	//}
 
-	if handlers.HTTP == nil && handlers.GRPC == nil {
+	if handlers.HTTP == nil /*&& handlers.GRPC == nil*/ {
 		return nil, errNoHandlersAreCreated
 	}
 
