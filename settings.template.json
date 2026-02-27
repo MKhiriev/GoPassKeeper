@@ -1,0 +1,19 @@
+{
+  "app": {
+    "version": "v1.0",
+    "password_hash_key": "super-secret-password-hash-key",
+    "token_sign_key": "super-secret-token-sign-key",
+    "token_issuer": "go-pass-keeper",
+    "token_duration": "24h",
+    "hash_key": "super-secret-hash-key"
+  },
+  "storage": {
+    "db": {
+      "dsn": "postgres://postgres:postgrespassword@localhost:5432/praktikum?sslmode=disable"
+    }
+  },
+  "server": {
+    "http_address": "0.0.0.0:8080",
+    "request_timeout": "30s"
+  }
+}

@@ -7,6 +7,10 @@
 *.dll
 *.so
 *.dylib
+/client
+/server
+main
+__debug_bin
 
 # Test binary, built with `go test -c`
 *.test
@@ -17,8 +21,9 @@ coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Dependencies and logs
+vendor/
+*.log
 
 # Go workspace file
 go.work
@@ -26,10 +31,28 @@ go.work.sum
 
 # env file
 .env
+.env.local
 
 # docs and other files
-Technical Specification.md
+SPECIFICATION.md
+TODO.md
+
 
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Configurations
+# Ignore all JSON files in the root directory, except for templates
+/*.json
+!/*.template.json
+
+# If config files appear in subfolders (e.g., during testing)
+**/settings.json
+**/client-settings.json
+
+# Databases and local data files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
