@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package migrations manages database schema migrations for the application.
 // It uses the goose migration library with embedded SQL files,
 // ensuring that all migration files are compiled into the binary

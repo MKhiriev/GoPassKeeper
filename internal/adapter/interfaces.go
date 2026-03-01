@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package adapter provides transport-layer abstractions for communicating with
 // the GoPassKeeper server.
 //

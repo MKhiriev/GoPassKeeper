@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package app contains shared application-layer constants used across the
 // GoPassKeeper server handlers and middleware.
 //

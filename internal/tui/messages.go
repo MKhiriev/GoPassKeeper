@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 package tui
 
 // NavigateTo is a Bubble Tea message sent by any page model to instruct [RootModel]

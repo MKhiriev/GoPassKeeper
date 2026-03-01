@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package workers provides abstractions for managing and running
 // background workers in the application.
 // It defines the Worker interface and a Workers aggregate that allows

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package tui implements the terminal user interface (TUI) for the GoPassKeeper client.
 //
 // The package is built on top of the Bubble Tea framework (github.com/charmbracelet/bubbletea)

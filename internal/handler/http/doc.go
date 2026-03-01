@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package http implements the HTTP transport layer of the application.
 //
 // It exposes route wiring, request handlers, and middleware used by the REST

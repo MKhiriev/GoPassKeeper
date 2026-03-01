@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package handler provides initialization logic for all inbound transport
 // adapters used by the go-pass-keeper application, including HTTP and gRPC
 // handlers. The package exposes a unified Handlers struct, which bundles
