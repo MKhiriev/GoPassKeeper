@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: GoPassKeeper
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: Khiriev
+    given-names: Rasul
+    alias: MKhiriev
+repository-code: "https://github.com/MKhiriev/GoPassKeeper"
+url: "https://github.com/MKhiriev/GoPassKeeper"
+license: Apache-2.0
