@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package crypto implements the client-side zero-knowledge cryptography layer
 // for GoPassKeeper.
 //

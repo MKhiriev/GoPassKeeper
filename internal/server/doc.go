@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package server wires and runs the application's transport servers.
 //
 // It provides orchestration for HTTP and gRPC server lifecycles, including

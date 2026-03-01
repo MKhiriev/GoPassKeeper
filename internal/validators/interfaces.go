@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package validators provides abstractions for input validation and
 // enforcement of business rules across the application.
 //

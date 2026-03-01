@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 package workers
 
 // Workers is an aggregate that holds a collection of Worker instances

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package config provides configuration loading, merging, and validation
 // facilities for the application.
 //

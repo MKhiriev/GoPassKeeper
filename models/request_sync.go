@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 package models
 
 // SyncRequest is sent by the client to initiate a synchronization cycle.

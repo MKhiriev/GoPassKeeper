@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package store provides data-access abstractions and repository implementations
 // for persisting and querying application domain objects (users, vault items).
 //

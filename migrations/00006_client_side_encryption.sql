@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright 2026 Rasul Khiriev
+
 -- +goose Up
 -- Миграция 000006: Переход на схему Zero-Knowledge (Client-side Encryption)
 

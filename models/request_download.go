@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 package models
 
 // DownloadRequest represents search criteria for querying vault items.

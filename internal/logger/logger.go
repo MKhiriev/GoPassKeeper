@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package logger provides a thin wrapper around zerolog.Logger that adds
 // convenience constructors and context-aware helpers used throughout the
 // go-pass-keeper application.

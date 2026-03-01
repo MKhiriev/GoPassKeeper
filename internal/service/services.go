@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package service defines the core business logic interfaces and service
 // implementations for the go-pass-keeper application.
 package service

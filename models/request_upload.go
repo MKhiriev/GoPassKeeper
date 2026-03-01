@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 package models
 
 // UploadRequest represents a batch upload request for storing vault items.

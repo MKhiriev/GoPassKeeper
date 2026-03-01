@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Rasul Khiriev
+
 // Package utils provides general-purpose helper utilities
 // used across different parts of the application.
 // Includes tools for working with context, type-safe keys, hashing,
